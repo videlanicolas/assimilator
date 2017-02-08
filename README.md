@@ -93,7 +93,8 @@ With Docker (recommended):
 
 ```bash
 cd /opt
-git clone https://github.com/videlanicolas/assimilator
+git clone https://github.com/videlanicolas/assimilator && cd assimilator
+./generate_certificate.sh
 docker build -t assimilator /opt/assimilator/
 docker run -d -p 443:443/tcp assimilator
 ```
@@ -101,7 +102,7 @@ Without Docker:
 ```bash
 cd /opt
 git clone https://github.com/videlanicolas/assimilator && cd assimilator
-chmod +x install.sh
+./generate_certificate.sh
 sudo ./install.sh
 ```
 
