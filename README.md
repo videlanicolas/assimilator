@@ -106,5 +106,4 @@ sudo ./install.sh
 ```
 
 ## Documentation
-<a href="https://s3.amazonaws.com/assimilator/Assimilatorpaper.pdf">Publication</a>
 Visit the <a href="https://github.com/videlanicolas/assimilator/wiki">wiki</a>.
