@@ -90,7 +90,6 @@ Response: HTTP 200
 ```
 ## Installation
 With Docker (recommended):
-
 ```bash
 cd /opt
 git clone https://github.com/videlanicolas/assimilator && cd assimilator
