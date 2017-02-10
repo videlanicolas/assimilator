@@ -11,6 +11,8 @@ class Firewall():
 		config.read("/etc/assimilator/assimilator.conf")
 		with open(config.get('General','firewalls')) as f:
 			return json.loads(f.read())[self.firewall]
+	def getMaster(self):
+		return self.firewall_config['primary']
 	def filter(self,args,_entries):
 		#Filter algorithm
 		for opt in args:

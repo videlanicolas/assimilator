@@ -17,16 +17,14 @@ logger = logging.getLogger(__name__)
 
 class PAN(Firewall):
 	def __init__(self,firewall_config):
-		self.key = firewall_config['key']
-		self.brand = firewall_config['brand']
-		self.primary = firewall_config['primary']
-		self.secondary = firewall_config['secondary']
+		self.firewall_config = firewall_config
 		a = self.getMaster()
-		self.primary = a['active'] if a['ok'] else None
+		self.firewall_config['primary'] = a['active'] if a['ok'] else None
+		self.primary = self.firewall_config['primary']
 	def apicall(self,verify=False,**kwargs):
-		self.__url_base = "https://{0}/api?key={1}".format(self.primary,self.key)
+		self.__url_base = "https://{0}/api?key={1}".format(self.firewall_config['primary'],self.firewall_config['key'])
 		response = get(self.__url_base,params=kwargs,verify=verify)
-		logger.debug("{0}: {1} {2}".format(self.primary,self.__url_base,str(kwargs)))
+		logger.debug("{0}: {1} {2}".format(self.firewall_config['primary'],self.__url_base,str(kwargs)))
 		return response
 	def getMaster(self):
 		response = self.apicall(type='op',\
@@ -35,22 +33,22 @@ class PAN(Firewall):
 		if response.ok:
 			if soup.response['status'] == 'success':
 				return {'ok' : True,\
-						'active' : self.primary if soup.response.result.group.find('local-info').state.text == 'active' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0],\
-						'passive' : self.primary if soup.response.result.group.find('local-info').state.text == 'passive' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0] }
+						'active' : self.firewall_config['primary'] if soup.response.result.group.find('local-info').state.text == 'active' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0],\
+						'passive' : self.firewall_config['primary'] if soup.response.result.group.find('local-info').state.text == 'passive' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0] }
 			else:
 				return {'ok' : False, 'info' : 'Could not get active firewall\'s ip.', 'panos-response' : soup.response['status']}
 		else:
-			aux = self.secondary
-			self.primary = self.secondary
-			self.secondary = aux
+			aux = self.firewall_config['secondary']
+			self.firewall_config['primary'] = self.firewall_config['secondary']
+			self.firewall_config['secondary'] = aux
 			del aux
 			response = self.apicall(type='op',\
 								cmd="<show><high-availability><state></state></high-availability></show>")
 			soup = BeautifulSoup(response.text,'xml')
 			if soup.response['status'] == 'success':
 				return {'status' : True,\
-							'active' : self.primary if soup.response.result.group.find('local-info').state.text == 'active' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0],\
-							'passive' : self.primary if soup.response.result.group.find('local-info').state.text == 'passive' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0] }
+							'active' : self.firewall_config['primary'] if soup.response.result.group.find('local-info').state.text == 'active' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0],\
+							'passive' : self.firewall_config['primary'] if soup.response.result.group.find('local-info').state.text == 'passive' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0] }
 			else:
 				return {'ok' : False, 'info' : 'Could not get active firewall\'s ip.', 'panos-response' : soup.response['status']}
 	def filter(self,args,_entries):

@@ -1,0 +1,3 @@
+#!/bin/bash
+chown -R www-data:www-data /etc/assimilator/
+/usr/sbin/apache2ctl -D FOREGROUND

@@ -54,7 +54,7 @@ class config(Resource):
 				logger.info("{0} active ip {1}".format(firewall, c.primary))
 				return c.get()
 		elif fw['brand'] == "juniper":
-			c = Juniper.configuration(firewall)
+			c = Juniper.configuration(firewall_config=fw)
 			if not c.primary:
 				logger.error("Could not get {0} active ip.".format(firewall))
 				return {'error' : 'Could not get firewall active IP.'}, 502
@@ -92,7 +92,7 @@ class rules(Resource):
 				logger.info("{0} active ip {1}".format(firewall, c.primary))
 				return c.get(request.args)
 		elif fw['brand'] == "juniper":
-			c = Juniper.rules(firewall)
+			c = Juniper.rules(firewall_config=fw)
 			if not c.primary:
 				logger.error("Could not get {0} active ip.".format(firewall))
 				return {'error' : 'Could not get firewall active IP.'}, 502
@@ -341,7 +341,7 @@ class rules_match(Resource):
 				logger.info("{0} active ip {1}".format(firewall, c.primary))
 				return c.get(request.args)
 		elif fw['brand'] == "juniper":
-			c = Juniper.match(firewall)
+			c = Juniper.match(firewall_config=fw)
 			if not c.primary:
 				logger.error("Could not get {0} active ip.".format(firewall))
 				return {'error' : 'Could not get firewall active IP.'}, 502
@@ -376,7 +376,7 @@ class objects(Resource):
 				logger.info("{0} active ip {1}".format(firewall, c.primary))
 				return c.get(request.args,object)
 		elif fw['brand'] == "juniper":
-			c = Juniper.objects(firewall)
+			c = Juniper.objects(firewall_config=fw)
 			if not c.primary:
 				logger.error("Could not get {0} active ip.".format(firewall))
 				return {'error' : 'Could not get firewall active IP.'}, 502
@@ -577,7 +577,7 @@ class interfaces(Resource):
 				logger.info("{0} active ip {1}".format(firewall, c.primary))
 				return c.get(request.args)
 		elif fw['brand'] == "juniper":
-			c = Juniper.configuration(firewall)
+			c = Juniper.configuration(firewall_config=fw)
 			return c.get()
 		elif fw['brand'] == "cisco":
 			return Cisco.configuration(firewall)
@@ -607,13 +607,19 @@ class route(Resource):
 				logger.info("{0} active ip {1}".format(firewall, c.primary))
 				return c.get(request.args)
 		elif fw['brand'] == "juniper":
-			c = Juniper.route(firewall)
+			if 'ip' in request.args:
+				c = Juniper.route_ip(firewall_config=fw)
+			else:
+				c = Juniper.route(firewall_config=fw)
 			if not c.primary:
 				logger.error("Could not get {0} active ip.".format(firewall))
 				return {'error' : 'Could not get firewall active IP.'}, 504
 			else:
 				logger.info("{0} active ip {1}".format(firewall, c.primary))
+			if 'ip' in request.args:
 				return c.get(request.args['ip'])
+			else:
+				return c.get()
 		elif fw['brand'] == "cisco":
 			return Cisco.configuration(firewall)
 		elif fw['brand'] == "aws":
@@ -637,7 +643,7 @@ class hitcount(Resource):
 		if not fw:
 			logger.error('Firewall not found.')
 			return {'error' : 'Firewall not found.'}, 404
-		c = Juniper.hitcount(firewall)
+		c = Juniper.hitcount(firewall_config=fw)
 		if not c.primary:
 			logger.error("Could not get {0} active ip.".format(firewall))
 			return {'error' : 'Could not get firewall active IP.'}, 504

@@ -94,5 +94,9 @@ api.add_resource(handler.commit, '/api/<string:firewall>/commit')
 #LOGGING
 api.add_resource(handler.logging, '/api/<string:firewall>/logging')
 
+##Palo Alto##
+#Hitcount
+api.add_resource(handler.hitcount, '/api/<string:firewall>/rules/hitcount')
+
 if __name__ == '__main__':
 	app.run(host='0.0.0.0',debug=False)
