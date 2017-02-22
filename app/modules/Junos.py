@@ -8,7 +8,8 @@ from lxml.builder import E
 from bs4.element import Tag
 from bs4 import BeautifulSoup as BS
 from jnpr.junos import Device
-from jnpr.junos.exception import ConnectError
+from jnpr.junos.utils.config import Config
+from jnpr.junos.exception import *
 import logging, socket, json, os
 
 #Get logger
@@ -129,18 +130,18 @@ class rules(JUNOS):
 			logger.info("Locked configuration.")
 		xml_source = ''
 		xml_destination = ''
-		xml_app = ''
+		xml_applicaiton = ''
 		for source in data['source']:
 			xml_source += '<source-address>{0}</source-address>'.format(source)
 		for destination in data['destination']:
 			xml_destination += '<destination-address>{0}</destination-address>'.format(destination)
 		for application in data['application']:
-			xml_application += '<application-address>{0}</application-address>'.format(application)
+			xml_application += '<application>{0}</application>'.format(application)
 		try:
 			logger.debug("Loading configuration to device.")
-			self.dev.cu.load(xml.format(data['form'],data['to'],data['name'],xml_source+xml_destination+xml_application),format='xml',merge=True)
+			self.dev.cu.load(xml.format(data['from'],data['to'],data['name'],xml_source+xml_destination+xml_application),format='xml',merge=True)
 		except ConfigLoadError as e:
-			logger.error("Unable to load configuration: {0}".str(e))
+			logger.error("Unable to load configuration: {0}".format(str(e)))
 			logger.info("Unlocking configuration...")
 			try:
 				self.dev.cu.unlock()
@@ -152,17 +153,38 @@ class rules(JUNOS):
 			finally:
 				logger.info("Closing connection...")
 				self.dev.close()
-			return {'error' : "Unable to load configuration: {0}".str(e)}, 500
+			return {'error' : "Unable to load configuration: {0}".format(str(e))}, 500
 		else:
-			logger.info("Unlocking configuration...")
 			try:
-				self.dev.cu.unlock()
-			except UnlockError as err:
-				logger.error("Unable to unlock configuration: {0}".format(str(err)))
-				return {'error' : "Unable to load and unlock configuration: {0}".format(str(err))}, 500
+				if comment:
+					self.dev.cu.commit(comment=comment)
+				else:
+					self.dev.cu.commit()
+			except CommitError:
+				logger.error("Unable to commit.")
+				try:
+					logger.info("Unlocking configuration...")
+					self.dev.cu.unlock()
+				except UnlockError:
+					logger.error("Unable to unlock configuration: {0}".format(str(err)))
+					return {'error' : 'Unable to commit and unlock configuration.'}, 504
+				else:
+					logger.info("Configuration unlocked.")
+					return {'error' : 'Unable to commit.'}, 504
 			else:
-				logger.info("Configuration unlocked.")
-				return data, 201
+				logger.info("Configuration commited successfully.")
+				logger.info("Unlocking configuration...")
+				try:
+					self.dev.cu.unlock()
+				except UnlockError:
+					logger.error("Unable to unlock configuration: {0}".format(str(err)))
+					return {'error' : 'Configuration commited but cannot unlock configuration.'}, 504
+				else:
+					logger.info("Configuration unlocked.")
+					return {'commit' : 'success'}
+			finally:
+				logger.info("Closing connection...")
+				self.dev.close()
 	def patch(self,name,data):
 		logger.debug("class rules(JUNOS).patch({0})".format(str(data)))
 		if not self.dev.connected:
@@ -176,6 +198,7 @@ class rules(JUNOS):
 			logger.error("Policy absent, cannot patch objects to rule.")
 			return {'error' : 'Rule does not exists.'}, 404
 		else:
+			logger.debug("Policy exists, appending new policy objects.")
 		xml = """<configuration><security><policies><policy><from-zone-name>{0}</from-zone-name><to-zone-name>{1}</to-zone-name><policy><name>{2}</name>
 				<match>{3}</match></policy></policy></policies></security></configuration>"""
 		try:
@@ -194,12 +217,12 @@ class rules(JUNOS):
 		for destination in data['destination']:
 			xml_destination += '<destination-address>{0}</destination-address>'.format(destination)
 		for application in data['application']:
-			xml_application += '<application-address>{0}</application-address>'.format(application)
+			xml_application += '<application>{0}</application>'.format(application)
 		try:
 			logger.debug("Loading configuration to device.")
 			self.dev.cu.load(xml.format(data['form'],data['to'],data['name'],xml_source+xml_destination+xml_application),format='xml',merge=True)
 		except ConfigLoadError as e:
-			logger.error("Unable to load configuration: {0}".str(e))
+			logger.error("Unable to load configuration: {0}".format(str(e)))
 			logger.info("Unlocking configuration...")
 			try:
 				self.dev.cu.unlock()
@@ -211,17 +234,38 @@ class rules(JUNOS):
 			finally:
 				logger.info("Closing connection...")
 				self.dev.close()
-			return {'error' : "Unable to load configuration: {0}".str(e)}, 500
+			return {'error' : "Unable to load configuration: {0}".format(str(e))}, 500
 		else:
-			logger.info("Unlocking configuration...")
 			try:
-				self.dev.cu.unlock()
-			except UnlockError as err:
-				logger.error("Unable to unlock configuration: {0}".format(str(err)))
-				return {'error' : "Unable to load and unlock configuration: {0}".format(str(err))}, 500
+				if comment:
+					self.dev.cu.commit(comment=comment)
+				else:
+					self.dev.cu.commit()
+			except CommitError:
+				logger.error("Unable to commit.")
+				try:
+					logger.info("Unlocking configuration...")
+					self.dev.cu.unlock()
+				except UnlockError:
+					logger.error("Unable to unlock configuration: {0}".format(str(err)))
+					return {'error' : 'Unable to commit and unlock configuration.'}, 504
+				else:
+					logger.info("Configuration unlocked.")
+					return {'error' : 'Unable to commit.'}, 504
 			else:
-				logger.info("Configuration unlocked.")
-				return data, 200
+				logger.info("Configuration commited successfully.")
+				logger.info("Unlocking configuration...")
+				try:
+					self.dev.cu.unlock()
+				except UnlockError:
+					logger.error("Unable to unlock configuration: {0}".format(str(err)))
+					return {'error' : 'Configuration commited but cannot unlock configuration.'}, 504
+				else:
+					logger.info("Configuration unlocked.")
+					return {'commit' : 'success'}
+			finally:
+				logger.info("Closing connection...")
+				self.dev.close()
 
 class objects(JUNOS):
 	def get(self,args=None,object=None):
@@ -446,20 +490,21 @@ class match(JUNOS):
 			"name": soup.find('policy-information').find('policy-name').text,
 			}
 		return {'allowed' : True if soup.find('policy-action').find('action-type').text == "permit" else False, 'policy' : aux}
-class objects(JUNOS):
+class commit(JUNOS):
 	def get(self):
 		if not self.dev.connected:
 			logger.error("{0}: Firewall timed out or incorrect device credentials.".format(self.firewall_config['name']))
 			return {'error' : 'Could not connect to device.'}, 504
 		else:
 			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
-		rpc = etree.tostring(str(jns.rpc.get_commit_information()), encoding='unicode')
+		rpc = etree.tostring(self.dev.rpc.get_commit_information(), encoding='unicode')
 		soup = BS(rpc,'xml')
 		entries = list()
+		logger.debug("soup: {0}".format(str(soup)))
 		for entry in soup.find('commit-information').children:
 			if type(entry) != Tag:
 				continue
-			entries.append({'user' : entry.user.text, 'sequence' : entry.find('sequence-number').text, 'date' : entry.find('date').text, 'comment' : entry.log.text})
+			entries.append({'user' : entry.user.text, 'sequence' : entry.find('sequence-number').text, 'date' : entry.find('date-time').text, 'comment' : entry.log.text if entry.log else None})
 		return {'len' : len(entries), 'commit' : entries}
 	def post(self,comment):
 		if not self.dev.connected:
@@ -468,6 +513,7 @@ class objects(JUNOS):
 		else:
 			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
 		self.dev.bind(cu=Config)
+		try:	
 			self.dev.cu.lock()
 		except LockError:
 			logger.error("Configuration locked.")

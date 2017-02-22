@@ -714,7 +714,7 @@ class commit(Resource):
 				return {'error' : 'Could not get firewall active IP.'}, 502
 			else:
 				logger.info("{0} active ip {1}".format(firewall, c.primary))
-				return c.post(comment=request.json()['comment'])
+				return c.post(comment=request.json['comment'])
 		elif fw['brand'] == "cisco":
 			return Cisco.configuration(firewall)
 		elif fw['brand'] == "aws":
