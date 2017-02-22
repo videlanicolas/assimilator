@@ -103,6 +103,126 @@ class rules(JUNOS):
 				entries.append(aux)
 		#entries = self.filter(args,entries)
 		return {'len' : len(entries), 'rules' : entries}
+	def post(self,data):
+		logger.debug("class rules(JUNOS).post({0})".format(str(data)))
+		if not self.dev.connected:
+			logger.error("{0}: Firewall timed out or incorrect device credentials.".format(self.firewall_config['name']))
+			return {'error' : 'Could not connect to device.'}, 504
+		else:
+			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
+		self.dev.bind(cu=Config)
+		soup = BS(str(etree.tostring(self.dev.rpc.get_firewall_policies(policy_name = data['name']), encoding='unicode')),'xml')
+		if soup.find("security-policies").text.strip('\n'):
+			logger.warning("Existing policy.")
+			return {'error' : 'Rule already exists.'}, 409
+		else:
+			logger.debug("Policy absent, creating new policy.")
+		xml = """<configuration><security><policies><policy><from-zone-name>{0}</from-zone-name><to-zone-name>{1}</to-zone-name><policy><name>{2}</name>
+				<match>{3}</match><then><permit></permit><count></count></then></policy></policy></policies></security></configuration>"""
+		try:
+			self.dev.cu.lock()
+		except LockError:
+			logger.error("Configuration locked.")
+			self.dev.close()
+			return {'error' : 'Could not lock configuration.'}, 504
+		else:
+			logger.info("Locked configuration.")
+		xml_source = ''
+		xml_destination = ''
+		xml_app = ''
+		for source in data['source']:
+			xml_source += '<source-address>{0}</source-address>'.format(source)
+		for destination in data['destination']:
+			xml_destination += '<destination-address>{0}</destination-address>'.format(destination)
+		for application in data['application']:
+			xml_application += '<application-address>{0}</application-address>'.format(application)
+		try:
+			logger.debug("Loading configuration to device.")
+			self.dev.cu.load(xml.format(data['form'],data['to'],data['name'],xml_source+xml_destination+xml_application),format='xml',merge=True)
+		except ConfigLoadError as e:
+			logger.error("Unable to load configuration: {0}".str(e))
+			logger.info("Unlocking configuration...")
+			try:
+				self.dev.cu.unlock()
+			except UnlockError as err:
+				logger.error("Unable to unlock configuration: {0}".format(str(err)))
+				return {'error' : "Unable to load and unlock configuration: {0}".format(str(err))}, 500
+			else:
+				logger.info("Configuration unlocked.")
+			finally:
+				logger.info("Closing connection...")
+				self.dev.close()
+			return {'error' : "Unable to load configuration: {0}".str(e)}, 500
+		else:
+			logger.info("Unlocking configuration...")
+			try:
+				self.dev.cu.unlock()
+			except UnlockError as err:
+				logger.error("Unable to unlock configuration: {0}".format(str(err)))
+				return {'error' : "Unable to load and unlock configuration: {0}".format(str(err))}, 500
+			else:
+				logger.info("Configuration unlocked.")
+				return data, 201
+	def patch(self,name,data):
+		logger.debug("class rules(JUNOS).patch({0})".format(str(data)))
+		if not self.dev.connected:
+			logger.error("{0}: Firewall timed out or incorrect device credentials.".format(self.firewall_config['name']))
+			return {'error' : 'Could not connect to device.'}, 504
+		else:
+			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
+		self.dev.bind(cu=Config)
+		soup = BS(str(etree.tostring(self.dev.rpc.get_firewall_policies(policy_name = name), encoding='unicode')),'xml')
+		if not soup.find("security-policies").text.strip('\n'):
+			logger.error("Policy absent, cannot patch objects to rule.")
+			return {'error' : 'Rule does not exists.'}, 404
+		else:
+		xml = """<configuration><security><policies><policy><from-zone-name>{0}</from-zone-name><to-zone-name>{1}</to-zone-name><policy><name>{2}</name>
+				<match>{3}</match></policy></policy></policies></security></configuration>"""
+		try:
+			self.dev.cu.lock()
+		except LockError:
+			logger.error("Configuration locked.")
+			self.dev.close()
+			return {'error' : 'Could not lock configuration.'}, 504
+		else:
+			logger.info("Locked configuration.")
+		xml_source = ''
+		xml_destination = ''
+		xml_app = ''
+		for source in data['source']:
+			xml_source += '<source-address>{0}</source-address>'.format(source)
+		for destination in data['destination']:
+			xml_destination += '<destination-address>{0}</destination-address>'.format(destination)
+		for application in data['application']:
+			xml_application += '<application-address>{0}</application-address>'.format(application)
+		try:
+			logger.debug("Loading configuration to device.")
+			self.dev.cu.load(xml.format(data['form'],data['to'],data['name'],xml_source+xml_destination+xml_application),format='xml',merge=True)
+		except ConfigLoadError as e:
+			logger.error("Unable to load configuration: {0}".str(e))
+			logger.info("Unlocking configuration...")
+			try:
+				self.dev.cu.unlock()
+			except UnlockError as err:
+				logger.error("Unable to unlock configuration: {0}".format(str(err)))
+				return {'error' : "Unable to load and unlock configuration: {0}".format(str(err))}, 500
+			else:
+				logger.info("Configuration unlocked.")
+			finally:
+				logger.info("Closing connection...")
+				self.dev.close()
+			return {'error' : "Unable to load configuration: {0}".str(e)}, 500
+		else:
+			logger.info("Unlocking configuration...")
+			try:
+				self.dev.cu.unlock()
+			except UnlockError as err:
+				logger.error("Unable to unlock configuration: {0}".format(str(err)))
+				return {'error' : "Unable to load and unlock configuration: {0}".format(str(err))}, 500
+			else:
+				logger.info("Configuration unlocked.")
+				return data, 200
+
 class objects(JUNOS):
 	def get(self,args=None,object=None):
 		if not self.dev.connected:
@@ -238,19 +358,19 @@ class route_ip(JUNOS):
 				return {'error' : 'Could not connect to device.'}, 504
 			else:
 				logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
-			rpc = etree.tostring(str(self.dev.rpc.get_route_information(destination=request.args['ip'])), encoding='unicode')
-			soup = BS(str(rpc).replace('\n            ','').replace('\n',''),'xml')
-			rpc2 = etree.tostring(str(self.dev.rpc.get_interface_information(interface_name=soup.find('via').text)), encoding='unicode')
+			rpc = etree.tostring(self.dev.rpc.get_route_information(destination=request.args['ip']), encoding='unicode')
+			soup = BS(u''.join(rpc).encode('utf-8'),'xml')
+			rpc2 = etree.tostring(self.dev.rpc.get_interface_information(interface_name=soup.find('via').text), encoding='unicode')
 			self.dev.close()
-			soup2 = BS(str(rpc2).replace('\n            ','').replace('\n',''),'xml')			
+			soup2 = BS(u''.join(rpc2).encode('utf-8'),'xml')			
 			return {'route' : {
-						'destination' : soup.find('rt-destination').text,
+						'destination' : soup.find('rt-destination').text if soup.find('rt-destination') else None,
 						'active' : True if soup.find('current-active') else False,
-						'type' : soup.find('protocol-name').text,
-						'preference' : int(soup.preference.text),
-						'age' : soup.age.text,
-						'next-hop' : soup.to.text,
-						'interface' : soup.via.text,
+						'type' : soup.find('protocol-name').text if soup.find('protocol-name') else None,
+						'preference' : int(soup.preference.text) if soup.preference else None,
+						'age' : soup.age.text if soup.age else None,
+						'next-hop' : soup.to.text if soup.to else None,
+						'interface' : soup.via.text if soup.via else None,
 						'zone' : soup2.find('logical-interface-zone-name').text.replace('\n','')
 						}}
 class match(JUNOS):
@@ -260,19 +380,25 @@ class match(JUNOS):
 			logger.error("{0}: Firewall timed out or incorrect device credentials.".format(self.firewall_config['name']))
 			return {'error' : 'Could not connect to device.'}, 504
 		else:
-			logger.info("{0}: Connected successfully.".format(self.firewall))
+			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
 		#Source Zone
-		rpc = etree.tostring(str(self.dev.rpc.get_route_information(destination=args['source'])), encoding='unicode')
-		soup = BS(str(rpc).replace('\n            ','').replace('\n',''),'xml')
-		rpc = etree.tostring(str(self.dev.rpc.get_interface_information(interface_name=soup.find('via').text)), encoding='unicode')
-		soup = BS(str(rpc).replace('\n            ','').replace('\n',''),'xml')
-		from_zone = soup.find('logical-interface-zone-name').text.replace('\n','')
+		if 'from' in args:
+			from_zone = args['from']
+		else:
+			rpc = etree.tostring(self.dev.rpc.get_route_information(destination=args['source']), encoding='unicode')
+			soup = BS(u''.join(rpc).encode('utf-8'),'xml')
+			rpc = etree.tostring(self.dev.rpc.get_interface_information(interface_name=soup.find('via').text), encoding='unicode')
+			soup = BS(u''.join(rpc).encode('utf-8'),'xml')
+			from_zone = soup.find('logical-interface-zone-name').text.replace('\n','')
 		#Destination Zone
-		rpc = etree.tostring(str(self.dev.rpc.get_route_information(destination=args['destination'])), encoding='unicode')
-		soup = BS(str(rpc).replace('\n            ','').replace('\n',''),'xml')
-		rpc = etree.tostring(str(self.dev.rpc.get_interface_information(interface_name=soup.find('via').text)), encoding='unicode')
-		soup = BS(str(rpc).replace('\n            ','').replace('\n',''),'xml')
-		to_zone = soup.find('logical-interface-zone-name').text.replace('\n','')
+		if 'to' in args:
+			to_zone = args['to']
+		else:
+			rpc = etree.tostring(str(self.dev.rpc.get_route_information(destination=args['destination'])), encoding='unicode')
+			soup = BS(u''.join(rpc).encode('utf-8'),'xml')
+			rpc = etree.tostring(str(self.dev.rpc.get_interface_information(interface_name=soup.find('via').text)), encoding='unicode')
+			soup = BS(u''.join(rpc).encode('utf-8'),'xml')
+			to_zone = soup.find('logical-interface-zone-name').text.replace('\n','')
 
 		if to_zone == from_zone:
 			return {'allowed' : True, 'policy' : 'Intrazone'}
@@ -320,6 +446,66 @@ class match(JUNOS):
 			"name": soup.find('policy-information').find('policy-name').text,
 			}
 		return {'allowed' : True if soup.find('policy-action').find('action-type').text == "permit" else False, 'policy' : aux}
+class objects(JUNOS):
+	def get(self):
+		if not self.dev.connected:
+			logger.error("{0}: Firewall timed out or incorrect device credentials.".format(self.firewall_config['name']))
+			return {'error' : 'Could not connect to device.'}, 504
+		else:
+			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
+		rpc = etree.tostring(str(jns.rpc.get_commit_information()), encoding='unicode')
+		soup = BS(rpc,'xml')
+		entries = list()
+		for entry in soup.find('commit-information').children:
+			if type(entry) != Tag:
+				continue
+			entries.append({'user' : entry.user.text, 'sequence' : entry.find('sequence-number').text, 'date' : entry.find('date').text, 'comment' : entry.log.text})
+		return {'len' : len(entries), 'commit' : entries}
+	def post(self,comment):
+		if not self.dev.connected:
+			logger.error("{0}: Firewall timed out or incorrect device credentials.".format(self.firewall_config['name']))
+			return {'error' : 'Could not connect to device.'}, 504
+		else:
+			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
+		self.dev.bind(cu=Config)
+			self.dev.cu.lock()
+		except LockError:
+			logger.error("Configuration locked.")
+			self.dev.close()
+			return {'error' : 'Could not lock configuration.'}, 504
+		else:
+			logger.info("Locked configuration.")
+		try:
+			if comment:
+				self.dev.cu.commit(comment=comment)
+			else:
+				self.dev.cu.commit()
+		except CommitError:
+			logger.error("Unable to commit.")
+			try:
+				logger.info("Unlocking configuration...")
+				self.dev.cu.unlock()
+			except UnlockError:
+				logger.error("Unable to unlock configuration: {0}".format(str(err)))
+				return {'error' : 'Unable to commit and unlock configuration.'}, 504
+			else:
+				logger.info("Configuration unlocked.")
+				return {'error' : 'Unable to commit.'}, 504
+		else:
+			logger.info("Configuration commited successfully.")
+			logger.info("Unlocking configuration...")
+			try:
+				self.dev.cu.unlock()
+			except UnlockError:
+				logger.error("Unable to unlock configuration: {0}".format(str(err)))
+				return {'error' : 'Configuration commited but cannot unlock configuration.'}, 504
+			else:
+				logger.info("Configuration unlocked.")
+				return {'commit' : 'success'}
+		finally:
+			logger.info("Closing connection...")
+			self.dev.close()
+
 class hitcount(JUNOS):
 	def get(self):
 		if not self.dev.connected:

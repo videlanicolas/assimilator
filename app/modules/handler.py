@@ -132,7 +132,16 @@ class rules(Resource):
 				else:
 					return c.post(request.json)
 		elif fw['brand'] == "juniper":
-			return Cisco.configuration(firewall)
+			c = Juniper.rules(firewall_config=fw)
+			if not c.primary:
+				logger.error("Could not get {0} active ip.".format(firewall))
+				return {'error' : 'Could not get firewall active IP.'}, 502
+			else:
+				logger.info("{0} active ip {1}".format(firewall, c.primary))
+				if not request.json:
+					return {'error' : 'Content type needs to be application/json.'}, 400
+				else:
+					return c.post(request.json)
 		elif fw['brand'] == "cisco":
 			return Cisco.configuration(firewall)
 		elif fw['brand'] == "aws":
@@ -168,7 +177,18 @@ class rules(Resource):
 				else:
 					return c.patch(request.args['name'], request.json)
 		elif fw['brand'] == "juniper":
-			return Cisco.configuration(firewall)
+			c = Juniper.rules(firewall_config=fw)
+			if not c.primary:
+				logger.error("Could not get {0} active ip.".format(firewall))
+				return {'error' : 'Could not get firewall active IP.'}, 502
+			else:
+				logger.info("{0} active ip {1}".format(firewall, c.primary))
+				if not request.json:
+					return {'error' : 'Content type needs to be application/json.'}, 400
+				elif 'name' not in request.args:
+					return {'error' : 'No rule name supplied.'}, 400
+				else:
+					return c.patch(request.args['name'], request.json)
 		elif fw['brand'] == "cisco":
 			return Cisco.configuration(firewall)
 		elif fw['brand'] == "aws":
@@ -634,6 +654,81 @@ class route(Resource):
 			#That Firewall Brand does not exists.
 			logger.error("{0}: Firewall brand not found.".format(request.remote_addr))
 			return {'error' : 'URL not found.'}, 404
+class commit(Resource):
+	@require_appkey
+	def get(self,firewall):
+		logger.debug('handler.commit.get()')
+		fw = Firewall(firewall=firewall).getConfig()
+		if not fw:
+			logger.error('Firewall not found.')
+			return {'error' : 'Firewall not found.'}, 404
+		if fw['brand'] == "paloalto":
+			c = PaloAlto.commit(firewall_config=fw)
+			if not c.primary:
+				logger.error("Could not get {0} active ip.".format(firewall))
+				return {'error' : 'Could not get firewall active IP.'}, 502
+			else:
+				logger.info("{0} active ip {1}".format(firewall, c.primary))
+				return c.get()
+		elif fw['brand'] == "juniper":
+			c = Juniper.commit(firewall_config=fw)
+			if not c.primary:
+				logger.error("Could not get {0} active ip.".format(firewall))
+				return {'error' : 'Could not get firewall active IP.'}, 502
+			else:
+				logger.info("{0} active ip {1}".format(firewall, c.primary))
+				return c.get()
+		elif fw['brand'] == "cisco":
+			return Cisco.configuration(firewall)
+		elif fw['brand'] == "aws":
+			return Cisco.configuration(firewall)
+		elif fw['brand'] == "checkpoint":
+			return Checkpoint.configuration(firewall)
+		elif fw['brand'] == "fortinet":
+			return Fortinet.configuration(firewall)
+		elif fw['brand'] == "pfsense":
+			return PfSense.configuration(firewall)
+		else:
+			#That Firewall Brand does not exists.
+			logger.error("{0}: Firewall brand not found.".format(request.remote_addr))
+			return {'error' : 'URL not found.'}, 404
+	@require_appkey
+	def post(self,firewall):
+		logger.debug('handler.commit.post()')
+		fw = Firewall(firewall=firewall).getConfig()
+		if not fw:
+			logger.error('Firewall not found.')
+			return {'error' : 'Firewall not found.'}, 404
+		if fw['brand'] == "paloalto":
+			c = PaloAlto.commit(firewall_config=fw)
+			if not c.primary:
+				logger.error("Could not get {0} active ip.".format(firewall))
+				return {'error' : 'Could not get firewall active IP.'}, 502
+			else:
+				logger.info("{0} active ip {1}".format(firewall, c.primary))
+				return c.post()
+		elif fw['brand'] == "juniper":
+			c = Juniper.commit(firewall_config=fw)
+			if not c.primary:
+				logger.error("Could not get {0} active ip.".format(firewall))
+				return {'error' : 'Could not get firewall active IP.'}, 502
+			else:
+				logger.info("{0} active ip {1}".format(firewall, c.primary))
+				return c.post(comment=request.json()['comment'])
+		elif fw['brand'] == "cisco":
+			return Cisco.configuration(firewall)
+		elif fw['brand'] == "aws":
+			return Cisco.configuration(firewall)
+		elif fw['brand'] == "checkpoint":
+			return Checkpoint.configuration(firewall)
+		elif fw['brand'] == "fortinet":
+			return Fortinet.configuration(firewall)
+		elif fw['brand'] == "pfsense":
+			return PfSense.configuration(firewall)
+		else:
+			#That Firewall Brand does not exists.
+			logger.error("{0}: Firewall brand not found.".format(request.remote_addr))
+			return {'error' : 'URL not found.'}, 404
 ##################################JUNIPER##################################
 class hitcount(Resource):
 	@require_appkey
@@ -780,35 +875,6 @@ class lock_admin(Resource):
 		else:
 			logger.info("{0} active ip {1}".format(firewall, c.primary))
 			return c.delete(option,admin)
-class commit(Resource):
-	@require_appkey
-	def get(self,firewall):
-		logger.debug('handler.commit.get()')
-		fw = Firewall(firewall=firewall).getConfig()
-		if not fw:
-			logger.error('Firewall not found.')
-			return {'error' : 'Firewall not found.'}, 404
-		c = PaloAlto.commit(firewall_config=fw)
-		if not c.primary:
-			logger.error("Could not get {0} active ip.".format(firewall))
-			return {'error' : 'Could not get firewall active IP.'}, 502
-		else:
-			logger.info("{0} active ip {1}".format(firewall, c.primary))
-			return c.get()
-	@require_appkey
-	def post(self,firewall):
-		logger.debug('handler.commit.post()')
-		fw = Firewall(firewall=firewall).getConfig()
-		if not fw:
-			logger.error('Firewall not found.')
-			return {'error' : 'Firewall not found.'}, 404
-		c = PaloAlto.commit(firewall_config=fw)
-		if not c.primary:
-			logger.error("Could not get {0} active ip.".format(firewall))
-			return {'error' : 'Could not get firewall active IP.'}, 502
-		else:
-			logger.info("{0} active ip {1}".format(firewall, c.primary))
-			return c.post()
 class logging(Resource):
 	@require_appkey
 	def get(self,firewall):
