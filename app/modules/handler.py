@@ -141,7 +141,7 @@ class rules(Resource):
 				if not request.json:
 					return {'error' : 'Content type needs to be application/json.'}, 400
 				else:
-					return c.post(request.json)
+					return c.post(data=request.json,comment=request.json['comment'])
 		elif fw['brand'] == "cisco":
 			return Cisco.configuration(firewall)
 		elif fw['brand'] == "aws":

@@ -104,7 +104,7 @@ class rules(JUNOS):
 				entries.append(aux)
 		#entries = self.filter(args,entries)
 		return {'len' : len(entries), 'rules' : entries}
-	def post(self,data):
+	def post(self,data,comment):
 		logger.debug("class rules(JUNOS).post({0})".format(str(data)))
 		if not self.dev.connected:
 			logger.error("{0}: Firewall timed out or incorrect device credentials.".format(self.firewall_config['name']))
@@ -130,7 +130,7 @@ class rules(JUNOS):
 			logger.info("Locked configuration.")
 		xml_source = ''
 		xml_destination = ''
-		xml_applicaiton = ''
+		xml_application = ''
 		for source in data['source']:
 			xml_source += '<source-address>{0}</source-address>'.format(source)
 		for destination in data['destination']:
@@ -366,6 +366,311 @@ class objects(JUNOS):
 			return {'error' : 'Resource not found.'}, 404
 		entries = self.filter(args,entries)
 		return {'firewall' : self.firewall_config['name'], 'len' : len(entries), str(object) : entries}
+	def post(self,data,object,comment):
+		if not self.dev.connected:
+			logger.error("{0}: Firewall timed out or incorrect device credentials.".format(self.firewall_config['name']))
+			return {'error' : 'Could not connect to device.'}, 504
+		else:
+			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
+		self.dev.bind(cu=Config)
+		if object == "address":
+			filter = E('security',E('zones',E('security-zone',E('name',data['dmz']),E('address-book',E('address',data['name'])))))
+			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+			soup = BS(str(rpc),'xml')
+			if soup.find('security'):
+				logger.warning("Object already exists.")
+				self.dev.close()
+				return {'error' : 'Object already exists.'}, 409
+			else:
+				logger.debug("Object does not exists.")
+			if data['type'] == 'ip':
+				t = 'ip-prefix'
+				v = data['value']
+			elif data['type'] == 'hostname':
+				t = 'dns-name'
+				v = '<name>{0}</name>'.format(data['value'])
+			xml = """<configuration><security><zones><security-zone><name>{0}</name><address-book><address><name>{1}</name><{2}>{3}</{2}>
+					</address></address-book></security-zone></zones></security></configuration>""".format(data['dmz'],data['name'],t,v)
+		elif object == "service":
+			filter = E('applications',E('application',data['name']))
+			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+			soup = BS(str(rpc),'xml')
+			if soup.find('security'):
+				logger.warning("Object already exists.")
+				self.dev.close()
+				return {'error' : 'Object already exists.'}, 409
+			else:
+				with open(os.path.join(os.path.dirname(__file__), 'default-applications.json')) as f:
+					for app in json.loads(f.read())['list']:
+						if app['name'] == data['name']:
+							logger.warning("Object already exists.")
+							self.dev.close()
+							return {'error' : 'Object already exists.'}, 409
+					else:
+						logger.debug("Object does not exists.")
+			xml = """<configuration><applications><application><name>{0}</name><protocol>{1}</protocol><destination-port>{2}</destination-port>
+					</application></applications></configuration>""".format(data['name'],data['protocol'],data['port'])			
+		elif object == "address-group":
+			filter = E('security',E('zones',E('security-zone',E('name',data['dmz']),E('address-book',E('address-set',data['name'])))))
+			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+			soup = BS(str(rpc),'xml')
+			if soup.find('security'):
+				logger.warning("Object already exists.")
+				self.dev.close()
+				return {'error' : 'Object already exists.'}, 409
+			else:
+				logger.debug("Object does not exists.")
+			members = ''
+			for member in data['mambers']:
+				filter = E('security',E('zones',E('security-zone',E('name',data['dmz']),E('address-book',E('address',member)))))
+				rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+				soup_aux = BS(str(rpc),'xml')
+				if soup.find('security'):
+					logger.debug("{0} address object exists.".format(member))
+					members += "<address><name>{0}</name></address>".format(member)
+				else:
+					filter = E('security',E('zones',E('security-zone',E('name',data['dmz']),E('address-book',E('address-set',member)))))
+					rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+					soup_aux = BS(str(rpc),'xml')
+					if soup.find('security'):
+						logger.debug("{0} address-group object exists.".format(member))
+						members += "<address-set><name>{0}</name></address-set>".format(member)
+					else:
+						logger.error("{0} object does not exists.".format(member))
+						self.dev.close()
+						return {'error' : '{0} object member does not exists.'.format(member)}, 400
+			xml = """<configuration><security><zones><security-zone><name>{0}</name><address-book><address-set><name>{1}</name>{2}</address-set>
+			</address-book></security-zone></zones></security></configuration>""".format(data['dmz'],data['name'],members)
+		elif object == "service-group":
+			filter = E('applications',E('application-set',data['name']))
+			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+			soup = BS(str(rpc),'xml')
+			if soup.find('security'):
+				logger.warning("Object already exists.")
+				self.dev.close()
+				return {'error' : 'Object already exists.'}, 409
+			else:
+				logger.debug("Object does not exists.")
+			members = ''
+			for member in data['mambers']:
+				filter = E('applications',E('application',data['name']))
+				rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+				soup_aux = BS(str(rpc),'xml')
+				if soup.find('security'):
+					logger.debug("{0} service object exists.".format(member))
+					members += "<application><name>{0}</name></application>".format(member)
+				else:
+					with open(os.path.join(os.path.dirname(__file__), 'default-applications.json')) as f:
+						for app in json.loads(f.read())['list']:
+							if app['name'] == member:
+								logger.debug("{0} service object exists.".format(member))
+								break
+						else:
+							filter = E('applications',E('application-set',data['name']))
+							rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+							soup_aux = BS(str(rpc),'xml')
+							if soup.find('security'):
+								logger.debug("{0} service-group object exists.".format(member))
+								members += "<application-set><name>{0}</name></application-set>".format(member)
+							else:
+								logger.error("{0} object does not exists.".format(member))
+								self.dev.close()
+								return {'error' : '{0} object member does not exists.'.format(member)}, 400
+			xml = """<configuration><applications><application-set><name>{0}</name>{1}</application-set></applications></configuration>""".format(data['name'],members)
+		else:
+			logger.warning("Resource not found.")
+			return {'error' : 'Resource not found.'}, 404
+		try:
+			self.dev.cu.lock()
+		except LockError:
+			logger.error("Configuration locked.")
+			self.dev.close()
+			return {'error' : 'Could not lock configuration.'}, 504
+		else:
+			logger.info("Locked configuration.")
+		
+		try:
+			logger.debug("Loading configuration to device.")
+			self.dev.cu.load(xml,format='xml',merge=True)
+		except ConfigLoadError as e:
+			logger.error("Unable to load configuration: {0}".format(str(e)))
+			logger.info("Unlocking configuration...")
+			try:
+				self.dev.cu.unlock()
+			except UnlockError as err:
+				logger.error("Unable to unlock configuration: {0}".format(str(err)))
+				return {'error' : "Unable to load and unlock configuration: {0}".format(str(err))}, 500
+			else:
+				logger.info("Configuration unlocked.")
+			finally:
+				logger.info("Closing connection...")
+				self.dev.close()
+			return {'error' : "Unable to load configuration: {0}".format(str(e))}, 500
+		else:
+			try:
+				if comment:
+					self.dev.cu.commit(comment=comment)
+				else:
+					self.dev.cu.commit()
+			except CommitError:
+				logger.error("Unable to commit.")
+				try:
+					logger.info("Unlocking configuration...")
+					self.dev.cu.unlock()
+				except UnlockError:
+					logger.error("Unable to unlock configuration: {0}".format(str(err)))
+					return {'error' : 'Unable to commit and unlock configuration.'}, 504
+				else:
+					logger.info("Configuration unlocked.")
+					return {'error' : 'Unable to commit.'}, 504
+			else:
+				logger.info("Configuration commited successfully.")
+				logger.info("Unlocking configuration...")
+				try:
+					self.dev.cu.unlock()
+				except UnlockError:
+					logger.error("Unable to unlock configuration: {0}".format(str(err)))
+					return {'error' : 'Configuration commited but cannot unlock configuration.'}, 504
+				else:
+					logger.info("Configuration unlocked.")
+					return {'commit' : 'success'}
+			finally:
+				logger.info("Closing connection...")
+				self.dev.close()
+	def patch(self,data,object,comment):
+		if not self.dev.connected:
+			logger.error("{0}: Firewall timed out or incorrect device credentials.".format(self.firewall_config['name']))
+			return {'error' : 'Could not connect to device.'}, 504
+		else:
+			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
+		self.dev.bind(cu=Config)
+		if object == "address-group":
+			filter = E('security',E('zones',E('security-zone',E('name',data['dmz']),E('address-book',E('address-set',data['name'])))))
+			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+			soup = BS(str(rpc),'xml')
+			if not soup.find('security'):
+				logger.warning("Object does not exists.")
+				self.dev.close()
+				return {'error' : 'Object does not exists.'}, 404
+			else:
+				logger.debug("Object already exists.")
+			members = ''
+			for member in data['mambers']:
+				filter = E('security',E('zones',E('security-zone',E('name',data['dmz']),E('address-book',E('address',member)))))
+				rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+				soup_aux = BS(str(rpc),'xml')
+				if soup.find('security'):
+					logger.debug("{0} address object exists.".format(member))
+					members += "<address><name>{0}</name></address>".format(member)
+				else:
+					filter = E('security',E('zones',E('security-zone',E('name',data['dmz']),E('address-book',E('address-set',member)))))
+					rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+					soup_aux = BS(str(rpc),'xml')
+					if soup.find('security'):
+						logger.debug("{0} address-group object exists.".format(member))
+						members += "<address-set><name>{0}</name></address-set>".format(member)
+					else:
+						logger.error("{0} object does not exists.".format(member))
+						self.dev.close()
+						return {'error' : '{0} object member does not exists.'.format(member)}, 400
+			xml = """<configuration><security><zones><security-zone><name>{0}</name><address-book><address-set><name>{1}</name>{2}</address-set>
+			</address-book></security-zone></zones></security></configuration>""".format(data['dmz'],data['name'],members)
+		elif object == "service-group":
+			filter = E('applications',E('application-set',data['name']))
+			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+			soup = BS(str(rpc),'xml')
+			if not soup.find('security'):
+				logger.warning("Object does not exists.")
+				self.dev.close()
+				return {'error' : 'Object does not exists.'}, 404
+			else:
+				logger.debug("Object already exists.")
+			members = ''
+			for member in data['mambers']:
+				filter = E('applications',E('application',data['name']))
+				rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+				soup_aux = BS(str(rpc),'xml')
+				if soup.find('security'):
+					logger.debug("{0} service object exists.".format(member))
+					members += "<application><name>{0}</name></application>".format(member)
+				else:
+					with open(os.path.join(os.path.dirname(__file__), 'default-applications.json')) as f:
+						for app in json.loads(f.read())['list']:
+							if app['name'] == member:
+								logger.debug("{0} service object exists.".format(member))
+								break
+						else:
+							filter = E('applications',E('application-set',data['name']))
+							rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+							soup_aux = BS(str(rpc),'xml')
+							if soup.find('security'):
+								logger.debug("{0} service-group object exists.".format(member))
+								members += "<application-set><name>{0}</name></application-set>".format(member)
+							else:
+								logger.error("{0} object does not exists.".format(member))
+								self.dev.close()
+								return {'error' : '{0} object member does not exists.'.format(member)}, 400
+			xml = """<configuration><applications><application-set><name>{0}</name>{1}</application-set></applications></configuration>""".format(data['name'],members)
+		else:
+			logger.warning("Resource not found.")
+			return {'error' : 'Resource not found.'}, 404
+		try:
+			self.dev.cu.lock()
+		except LockError:
+			logger.error("Configuration locked.")
+			self.dev.close()
+			return {'error' : 'Could not lock configuration.'}, 504
+		else:
+			logger.info("Locked configuration.")
+		
+		try:
+			logger.debug("Loading configuration to device.")
+			self.dev.cu.load(xml,format='xml',merge=True)
+		except ConfigLoadError as e:
+			logger.error("Unable to load configuration: {0}".format(str(e)))
+			logger.info("Unlocking configuration...")
+			try:
+				self.dev.cu.unlock()
+			except UnlockError as err:
+				logger.error("Unable to unlock configuration: {0}".format(str(err)))
+				return {'error' : "Unable to load and unlock configuration: {0}".format(str(err))}, 500
+			else:
+				logger.info("Configuration unlocked.")
+			finally:
+				logger.info("Closing connection...")
+				self.dev.close()
+			return {'error' : "Unable to load configuration: {0}".format(str(e))}, 500
+		else:
+			try:
+				if comment:
+					self.dev.cu.commit(comment=comment)
+				else:
+					self.dev.cu.commit()
+			except CommitError:
+				logger.error("Unable to commit.")
+				try:
+					logger.info("Unlocking configuration...")
+					self.dev.cu.unlock()
+				except UnlockError:
+					logger.error("Unable to unlock configuration: {0}".format(str(err)))
+					return {'error' : 'Unable to commit and unlock configuration.'}, 504
+				else:
+					logger.info("Configuration unlocked.")
+					return {'error' : 'Unable to commit.'}, 504
+			else:
+				logger.info("Configuration commited successfully.")
+				logger.info("Unlocking configuration...")
+				try:
+					self.dev.cu.unlock()
+				except UnlockError:
+					logger.error("Unable to unlock configuration: {0}".format(str(err)))
+					return {'error' : 'Configuration commited but cannot unlock configuration.'}, 504
+				else:
+					logger.info("Configuration unlocked.")
+					return {'commit' : 'success'}
+			finally:
+				logger.info("Closing connection...")
+				self.dev.close()
 class route(JUNOS):
 	def get(self):
 		if not self.dev.connected:
