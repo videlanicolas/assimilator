@@ -141,7 +141,7 @@ class rules(Resource):
 				if not request.json:
 					return {'error' : 'Content type needs to be application/json.'}, 400
 				else:
-					return c.post(data=request.json,comment=request.json['comment'])
+					return c.post(data=request.json,comment=request.args['comment'])
 		elif fw['brand'] == "cisco":
 			return Cisco.configuration(firewall)
 		elif fw['brand'] == "aws":
@@ -185,10 +185,10 @@ class rules(Resource):
 				logger.info("{0} active ip {1}".format(firewall, c.primary))
 				if not request.json:
 					return {'error' : 'Content type needs to be application/json.'}, 400
-				elif 'name' not in request.args:
+				elif 'name' not in request.json:
 					return {'error' : 'No rule name supplied.'}, 400
 				else:
-					return c.patch(request.args['name'], request.json)
+					return c.patch(request.json['name'], request.json,comment=request.args['comment'])
 		elif fw['brand'] == "cisco":
 			return Cisco.configuration(firewall)
 		elif fw['brand'] == "aws":
@@ -433,8 +433,16 @@ class objects(Resource):
 				else:
 					return c.post(request.json,object)
 		elif fw['brand'] == "juniper":
-			c = Juniper.configuration(firewall)
-			return c.get()
+			c = Juniper.objects(firewall_config=fw)
+			if not c.primary:
+				logger.error("Could not get {0} active ip.".format(firewall))
+				return {'error' : 'Could not get firewall active IP.'}, 502
+			else:
+				logger.info("{0} active ip {1}".format(firewall, c.primary))
+				if not request.json:
+					return {'error' : 'Content type needs to be application/json.'}, 400
+				else:
+					return c.post(data=request.json,object=object,comment=request.args['comment'])
 		elif fw['brand'] == "cisco":
 			return Cisco.configuration(firewall)
 		elif fw['brand'] == "checkpoint":
@@ -465,8 +473,16 @@ class objects(Resource):
 				else:
 					return c.patch(request.json,object)
 		elif fw['brand'] == "juniper":
-			c = Juniper.configuration(firewall)
-			return c.get()
+			c = Juniper.objects(firewall_config=fw)
+			if not c.primary:
+				logger.error("Could not get {0} active ip.".format(firewall))
+				return {'error' : 'Could not get firewall active IP.'}, 502
+			else:
+				logger.info("{0} active ip {1}".format(firewall, c.primary))
+				if not request.json:
+					return {'error' : 'Content type needs to be application/json.'}, 400
+				else:
+					return c.patch(data=request.json,object=object,comment=request.args['comment'])
 		elif fw['brand'] == "cisco":
 			return Cisco.configuration(firewall)
 		elif fw['brand'] == "checkpoint":

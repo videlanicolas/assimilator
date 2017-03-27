@@ -46,9 +46,13 @@ class configuration(JUNOS):
 			return {'error' : 'Could not connect to device.'}, 502
 		else:
 			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
-		ret = self.dev.rpc.get_config()
-		self.dev.close()
-
+		try:
+			ret = self.dev.rpc.get_config()
+		except Exception as e:
+			logger.error("Error parsing soup: {0}".format(str(e)))
+			return {'error' : 'Error parsing soup.'}, 500
+		finally:
+			self.dev.close()
 		return {'config' : etree.tostring(ret, encoding='unicode')}
 class rules(JUNOS):
 	def get(self,args):
@@ -58,10 +62,15 @@ class rules(JUNOS):
 			return {'error' : 'Could not connect to device.'}, 504
 		else:
 			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
-		soup = BS(str(etree.tostring(self.dev.rpc.get_firewall_policies(), encoding='unicode')),'xml')
-		logger.debug("soup: " + str(soup))
-		logger.debug("Closing device...")
-		self.dev.close()
+		try:
+			soup = BS(str(etree.tostring(self.dev.rpc.get_firewall_policies(), encoding='unicode')),'xml')
+			logger.debug("soup: " + str(soup))
+		except Exception as e:
+			logger.error("Error parsing soup: {0}".format(str(e)))
+			return {'error' : 'Error parsing soup.'}, 500
+		finally:
+			logger.debug("Closing device...")
+			self.dev.close()
 		entries = list()
 		for context in soup.find("security-policies").children:			
 			if type(context) != Tag:
@@ -121,7 +130,8 @@ class rules(JUNOS):
 		xml = """<configuration><security><policies><policy><from-zone-name>{0}</from-zone-name><to-zone-name>{1}</to-zone-name><policy><name>{2}</name>
 				<match>{3}</match><then><permit></permit><count></count></then></policy></policy></policies></security></configuration>"""
 		try:
-			self.dev.cu.lock()
+			#self.dev.cu.lock()
+			pass
 		except LockError:
 			logger.error("Configuration locked.")
 			self.dev.close()
@@ -144,7 +154,8 @@ class rules(JUNOS):
 			logger.error("Unable to load configuration: {0}".format(str(e)))
 			logger.info("Unlocking configuration...")
 			try:
-				self.dev.cu.unlock()
+				#self.dev.cu.unlock()
+				pass
 			except UnlockError as err:
 				logger.error("Unable to unlock configuration: {0}".format(str(err)))
 				return {'error' : "Unable to load and unlock configuration: {0}".format(str(err))}, 500
@@ -164,7 +175,8 @@ class rules(JUNOS):
 				logger.error("Unable to commit.")
 				try:
 					logger.info("Unlocking configuration...")
-					self.dev.cu.unlock()
+					#self.dev.cu.unlock()
+					pass
 				except UnlockError:
 					logger.error("Unable to unlock configuration: {0}".format(str(err)))
 					return {'error' : 'Unable to commit and unlock configuration.'}, 504
@@ -175,7 +187,8 @@ class rules(JUNOS):
 				logger.info("Configuration commited successfully.")
 				logger.info("Unlocking configuration...")
 				try:
-					self.dev.cu.unlock()
+					#self.dev.cu.unlock()
+					pass
 				except UnlockError:
 					logger.error("Unable to unlock configuration: {0}".format(str(err)))
 					return {'error' : 'Configuration commited but cannot unlock configuration.'}, 504
@@ -185,7 +198,7 @@ class rules(JUNOS):
 			finally:
 				logger.info("Closing connection...")
 				self.dev.close()
-	def patch(self,name,data):
+	def patch(self,name,data,comment):
 		logger.debug("class rules(JUNOS).patch({0})".format(str(data)))
 		if not self.dev.connected:
 			logger.error("{0}: Firewall timed out or incorrect device credentials.".format(self.firewall_config['name']))
@@ -193,7 +206,7 @@ class rules(JUNOS):
 		else:
 			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
 		self.dev.bind(cu=Config)
-		soup = BS(str(etree.tostring(self.dev.rpc.get_firewall_policies(policy_name = name), encoding='unicode')),'xml')
+		soup = BS(str(etree.tostring(self.dev.rpc.get_firewall_policies(from_zone = data['from'], to_zone = data['to'] ,policy_name = name), encoding='unicode')),'xml')
 		if not soup.find("security-policies").text.strip('\n'):
 			logger.error("Policy absent, cannot patch objects to rule.")
 			return {'error' : 'Rule does not exists.'}, 404
@@ -202,7 +215,8 @@ class rules(JUNOS):
 		xml = """<configuration><security><policies><policy><from-zone-name>{0}</from-zone-name><to-zone-name>{1}</to-zone-name><policy><name>{2}</name>
 				<match>{3}</match></policy></policy></policies></security></configuration>"""
 		try:
-			self.dev.cu.lock()
+			#self.dev.cu.lock()
+			pass
 		except LockError:
 			logger.error("Configuration locked.")
 			self.dev.close()
@@ -211,21 +225,25 @@ class rules(JUNOS):
 			logger.info("Locked configuration.")
 		xml_source = ''
 		xml_destination = ''
-		xml_app = ''
-		for source in data['source']:
-			xml_source += '<source-address>{0}</source-address>'.format(source)
-		for destination in data['destination']:
-			xml_destination += '<destination-address>{0}</destination-address>'.format(destination)
-		for application in data['application']:
-			xml_application += '<application>{0}</application>'.format(application)
+		xml_application = ''
+		if 'source' in data:
+			for source in data['source']:
+				xml_source += '<source-address>{0}</source-address>'.format(source)
+		if 'destination' in data:
+			for destination in data['destination']:
+				xml_destination += '<destination-address>{0}</destination-address>'.format(destination)
+		if 'application' in data:
+			for application in data['application']:
+				xml_application += '<application>{0}</application>'.format(application)
 		try:
 			logger.debug("Loading configuration to device.")
-			self.dev.cu.load(xml.format(data['form'],data['to'],data['name'],xml_source+xml_destination+xml_application),format='xml',merge=True)
+			self.dev.cu.load(xml.format(data['from'],data['to'],data['name'],xml_source+xml_destination+xml_application),format='xml',merge=True)
 		except ConfigLoadError as e:
 			logger.error("Unable to load configuration: {0}".format(str(e)))
 			logger.info("Unlocking configuration...")
 			try:
-				self.dev.cu.unlock()
+				#self.dev.cu.unlock()
+				pass
 			except UnlockError as err:
 				logger.error("Unable to unlock configuration: {0}".format(str(err)))
 				return {'error' : "Unable to load and unlock configuration: {0}".format(str(err))}, 500
@@ -241,11 +259,12 @@ class rules(JUNOS):
 					self.dev.cu.commit(comment=comment)
 				else:
 					self.dev.cu.commit()
-			except CommitError:
-				logger.error("Unable to commit.")
+			except CommitError as commit_error:
+				logger.error("Unable to commit: {0}".format(str(commit_error)))
 				try:
 					logger.info("Unlocking configuration...")
-					self.dev.cu.unlock()
+					#self.dev.cu.unlock()
+					pass
 				except UnlockError:
 					logger.error("Unable to unlock configuration: {0}".format(str(err)))
 					return {'error' : 'Unable to commit and unlock configuration.'}, 504
@@ -256,7 +275,8 @@ class rules(JUNOS):
 				logger.info("Configuration commited successfully.")
 				logger.info("Unlocking configuration...")
 				try:
-					self.dev.cu.unlock()
+					#self.dev.cu.unlock()
+					pass
 				except UnlockError:
 					logger.error("Unable to unlock configuration: {0}".format(str(err)))
 					return {'error' : 'Configuration commited but cannot unlock configuration.'}, 504
@@ -277,8 +297,13 @@ class objects(JUNOS):
 		entries = list()
 		if object == "address":
 			filter = E('security',E('zones'))
-			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
-			self.dev.close()
+			try:
+				rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+			except Exception as e:
+				logger.error("Error parsing rpc: {0}".format(str(e)))
+				return {'error' : 'Error parsing soup.'}, 500
+			finally:
+				self.dev.close()
 			soup = BS(str(rpc),'xml')
 			for zone in soup.zones.children:
 				if type(zone) != Tag or not zone.find('address-book'):
@@ -296,18 +321,14 @@ class objects(JUNOS):
 					entries.append(aux)
 		elif object == "service":
 			filter = E('applications')
-			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
-			self.dev.close()
+			try:
+				rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+			except Exception as e:
+				logger.error("Error parsing rpc: {0}".format(str(e)))
+				return {'error' : 'Error parsing soup.'}, 500
+			finally:
+				self.dev.close()
 			soup = BS(str(rpc),'xml')
-			for application in soup.applications.children:
-				if type(application) != Tag or application.name != 'application':
-					continue
-				aux = {
-				'name' : application.find('name').text,
-				'protocol' : application.protocol.text if application.protocol else '',
-				'port' : application.find('destination-port').text if application.find('destination-port') else ''
-				}
-				entries.append(aux)
 			#Load default junos service objects
 			with open(os.path.join(os.path.dirname(__file__), 'default-applications.json')) as f:
 				for app in json.loads(f.read())['list']:
@@ -322,10 +343,24 @@ class objects(JUNOS):
 											entries.append(app)
 								elif request.args[opcion].lower() in app[opcion].lower():
 									entries.append(app)
+			for application in soup.applications.children:
+				if type(application) != Tag or application.name != 'application':
+					continue
+				aux = {
+				'name' : application.find('name').text,
+				'protocol' : application.protocol.text if application.protocol else '',
+				'port' : application.find('destination-port').text if application.find('destination-port') else ''
+				}
+				entries.append(aux)
 		elif object == "address-group":
 			filter = E('security',E('zones'))
-			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
-			self.dev.close()
+			try:
+				rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+			except Exception as e:
+				logger.error("Error parsing rpc: {0}".format(str(e)))
+				return {'error' : 'Error parsing soup.'}, 500
+			finally:
+				self.dev.close()
 			soup = BS(str(rpc),'xml')
 			for zone in soup.zones.children:
 				if type(zone) != Tag or not zone.find('address-book'):
@@ -346,8 +381,13 @@ class objects(JUNOS):
 					entries.append(aux)
 		elif object == "service-group":
 			filter = E('applications')
-			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
-			self.dev.close()
+			try:
+				rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
+			except Exception as e:
+				logger.error("Error parsing rpc: {0}".format(str(e)))
+				return {'error' : 'Error parsing soup.'}, 500
+			finally:
+				self.dev.close()
 			soup = BS(str(rpc),'xml')
 			for application in soup.applications.children:
 				if type(application) != Tag or application.name != 'application-set':
@@ -395,7 +435,7 @@ class objects(JUNOS):
 			filter = E('applications',E('application',data['name']))
 			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
 			soup = BS(str(rpc),'xml')
-			if soup.find('security'):
+			if not soup.configuration.isSelfClosing:
 				logger.warning("Object already exists.")
 				self.dev.close()
 				return {'error' : 'Object already exists.'}, 409
@@ -421,7 +461,7 @@ class objects(JUNOS):
 			else:
 				logger.debug("Object does not exists.")
 			members = ''
-			for member in data['mambers']:
+			for member in data['members']:
 				filter = E('security',E('zones',E('security-zone',E('name',data['dmz']),E('address-book',E('address',member)))))
 				rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
 				soup_aux = BS(str(rpc),'xml')
@@ -445,14 +485,14 @@ class objects(JUNOS):
 			filter = E('applications',E('application-set',data['name']))
 			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
 			soup = BS(str(rpc),'xml')
-			if soup.find('security'):
+			if not soup.configuration.isSelfClosing:
 				logger.warning("Object already exists.")
 				self.dev.close()
 				return {'error' : 'Object already exists.'}, 409
 			else:
 				logger.debug("Object does not exists.")
 			members = ''
-			for member in data['mambers']:
+			for member in data['members']:
 				filter = E('applications',E('application',data['name']))
 				rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
 				soup_aux = BS(str(rpc),'xml')
@@ -464,6 +504,7 @@ class objects(JUNOS):
 						for app in json.loads(f.read())['list']:
 							if app['name'] == member:
 								logger.debug("{0} service object exists.".format(member))
+								members += "<application><name>{0}</name></application>".format(member)
 								break
 						else:
 							filter = E('applications',E('application-set',data['name']))
@@ -481,9 +522,11 @@ class objects(JUNOS):
 			logger.warning("Resource not found.")
 			return {'error' : 'Resource not found.'}, 404
 		try:
-			self.dev.cu.lock()
-		except LockError:
-			logger.error("Configuration locked.")
+			##self.dev.cu.lock()
+			pass
+			pass
+		except LockError as lock_error:
+			logger.error("Configuration locked: {0}".format(str(lock_error)))
 			self.dev.close()
 			return {'error' : 'Could not lock configuration.'}, 504
 		else:
@@ -491,12 +534,14 @@ class objects(JUNOS):
 		
 		try:
 			logger.debug("Loading configuration to device.")
+			logger.debug("xml: {0}".format(xml))
 			self.dev.cu.load(xml,format='xml',merge=True)
 		except ConfigLoadError as e:
 			logger.error("Unable to load configuration: {0}".format(str(e)))
 			logger.info("Unlocking configuration...")
 			try:
-				self.dev.cu.unlock()
+				#self.dev.cu.unlock()
+				pass
 			except UnlockError as err:
 				logger.error("Unable to unlock configuration: {0}".format(str(err)))
 				return {'error' : "Unable to load and unlock configuration: {0}".format(str(err))}, 500
@@ -516,7 +561,8 @@ class objects(JUNOS):
 				logger.error("Unable to commit.")
 				try:
 					logger.info("Unlocking configuration...")
-					self.dev.cu.unlock()
+					#self.dev.cu.unlock()
+					pass
 				except UnlockError:
 					logger.error("Unable to unlock configuration: {0}".format(str(err)))
 					return {'error' : 'Unable to commit and unlock configuration.'}, 504
@@ -527,7 +573,8 @@ class objects(JUNOS):
 				logger.info("Configuration commited successfully.")
 				logger.info("Unlocking configuration...")
 				try:
-					self.dev.cu.unlock()
+					#self.dev.cu.unlock()
+					pass
 				except UnlockError:
 					logger.error("Unable to unlock configuration: {0}".format(str(err)))
 					return {'error' : 'Configuration commited but cannot unlock configuration.'}, 504
@@ -555,18 +602,18 @@ class objects(JUNOS):
 			else:
 				logger.debug("Object already exists.")
 			members = ''
-			for member in data['mambers']:
+			for member in data['members']:
 				filter = E('security',E('zones',E('security-zone',E('name',data['dmz']),E('address-book',E('address',member)))))
 				rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
 				soup_aux = BS(str(rpc),'xml')
-				if soup.find('security'):
+				if soup_aux.find('security'):
 					logger.debug("{0} address object exists.".format(member))
 					members += "<address><name>{0}</name></address>".format(member)
 				else:
 					filter = E('security',E('zones',E('security-zone',E('name',data['dmz']),E('address-book',E('address-set',member)))))
 					rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
 					soup_aux = BS(str(rpc),'xml')
-					if soup.find('security'):
+					if soup_aux.find('security'):
 						logger.debug("{0} address-group object exists.".format(member))
 						members += "<address-set><name>{0}</name></address-set>".format(member)
 					else:
@@ -579,18 +626,18 @@ class objects(JUNOS):
 			filter = E('applications',E('application-set',data['name']))
 			rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
 			soup = BS(str(rpc),'xml')
-			if not soup.find('security'):
+			if soup.configuration.isSelfClosing:
 				logger.warning("Object does not exists.")
 				self.dev.close()
 				return {'error' : 'Object does not exists.'}, 404
 			else:
-				logger.debug("Object already exists.")
+				logger.debug("Object exists.")
 			members = ''
-			for member in data['mambers']:
+			for member in data['members']:
 				filter = E('applications',E('application',data['name']))
 				rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
 				soup_aux = BS(str(rpc),'xml')
-				if soup.find('security'):
+				if soup_aux.find('security'):
 					logger.debug("{0} service object exists.".format(member))
 					members += "<application><name>{0}</name></application>".format(member)
 				else:
@@ -598,12 +645,13 @@ class objects(JUNOS):
 						for app in json.loads(f.read())['list']:
 							if app['name'] == member:
 								logger.debug("{0} service object exists.".format(member))
+								members += "<application><name>{0}</name></application>".format(member)
 								break
 						else:
 							filter = E('applications',E('application-set',data['name']))
 							rpc = etree.tostring(self.dev.rpc.get_config(filter), encoding='unicode')
 							soup_aux = BS(str(rpc),'xml')
-							if soup.find('security'):
+							if not soup.configuration.isSelfClosing:
 								logger.debug("{0} service-group object exists.".format(member))
 								members += "<application-set><name>{0}</name></application-set>".format(member)
 							else:
@@ -615,7 +663,8 @@ class objects(JUNOS):
 			logger.warning("Resource not found.")
 			return {'error' : 'Resource not found.'}, 404
 		try:
-			self.dev.cu.lock()
+			#self.dev.cu.lock()
+			pass
 		except LockError:
 			logger.error("Configuration locked.")
 			self.dev.close()
@@ -625,12 +674,14 @@ class objects(JUNOS):
 		
 		try:
 			logger.debug("Loading configuration to device.")
+			logger.debug("xml: {0}".format(xml))
 			self.dev.cu.load(xml,format='xml',merge=True)
 		except ConfigLoadError as e:
 			logger.error("Unable to load configuration: {0}".format(str(e)))
 			logger.info("Unlocking configuration...")
 			try:
-				self.dev.cu.unlock()
+				#self.dev.cu.unlock()
+				pass
 			except UnlockError as err:
 				logger.error("Unable to unlock configuration: {0}".format(str(err)))
 				return {'error' : "Unable to load and unlock configuration: {0}".format(str(err))}, 500
@@ -650,7 +701,8 @@ class objects(JUNOS):
 				logger.error("Unable to commit.")
 				try:
 					logger.info("Unlocking configuration...")
-					self.dev.cu.unlock()
+					#self.dev.cu.unlock()
+					pass
 				except UnlockError:
 					logger.error("Unable to unlock configuration: {0}".format(str(err)))
 					return {'error' : 'Unable to commit and unlock configuration.'}, 504
@@ -661,7 +713,8 @@ class objects(JUNOS):
 				logger.info("Configuration commited successfully.")
 				logger.info("Unlocking configuration...")
 				try:
-					self.dev.cu.unlock()
+					#self.dev.cu.unlock()
+					pass
 				except UnlockError:
 					logger.error("Unable to unlock configuration: {0}".format(str(err)))
 					return {'error' : 'Configuration commited but cannot unlock configuration.'}, 504
@@ -678,10 +731,14 @@ class route(JUNOS):
 			return {'error' : 'Could not connect to device.'}, 504
 		else:
 			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
-		
-		rpc = etree.tostring(str(self.dev.rpc.get_route_information()), encoding='unicode')
-		soup = BS(str(rpc).replace('\n            ','').replace('\n',''),'xml')
-		self.dev.close()
+		try:
+			rpc = etree.tostring(str(self.dev.rpc.get_route_information()), encoding='unicode')
+			soup = BS(str(rpc).replace('\n            ','').replace('\n',''),'xml')
+		except Exception as e:
+			logger.error("Error parsing rpc: {0}".format(str(e)))
+			return {'error' : 'Error parsing soup.'}, 500
+		finally:
+			self.dev.close()
 		logger.debug(str(soup))
 		return {'route' : {
 					'destination' : soup.find('rt-destination').text,
@@ -707,11 +764,28 @@ class route_ip(JUNOS):
 				return {'error' : 'Could not connect to device.'}, 504
 			else:
 				logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
-			rpc = etree.tostring(self.dev.rpc.get_route_information(destination=request.args['ip']), encoding='unicode')
-			soup = BS(u''.join(rpc).encode('utf-8'),'xml')
-			rpc2 = etree.tostring(self.dev.rpc.get_interface_information(interface_name=soup.find('via').text), encoding='unicode')
-			self.dev.close()
-			soup2 = BS(u''.join(rpc2).encode('utf-8'),'xml')			
+			try:
+				rpc = etree.tostring(self.dev.rpc.get_route_information(destination=request.args['ip']), encoding='unicode')
+				soup = BS(u''.join(rpc).encode('utf-8'),'xml')
+				rpc2 = etree.tostring(self.dev.rpc.get_interface_information(interface_name=soup.find('via').text), encoding='unicode')
+				soup2 = BS(u''.join(rpc2).encode('utf-8'),'xml')
+				for iface in soup.find_all('via'):
+					if not iface:
+						continue
+					else:
+						rpc2 = etree.tostring(self.dev.rpc.get_interface_information(interface_name=iface.text), encoding='unicode')
+						soup2 = BS(u''.join(rpc2).encode('utf-8'),'xml')
+						if soup2.find('logical-interface-zone-name'):
+							_iface = iface.text
+							break
+				if not soup2.find('logical-interface-zone-name'):
+					raise Exception("Interface has no Zone.")
+			except Exception as e:
+				logger.error("Error parsing rpc: {0}".format(str(e)))
+				return {'error' : 'Error parsing soup.'}, 500
+			finally:
+				self.dev.close()
+			zone = soup2.find('logical-interface-zone-name').text.replace('\n','')
 			return {'route' : {
 						'destination' : soup.find('rt-destination').text if soup.find('rt-destination') else None,
 						'active' : True if soup.find('current-active') else False,
@@ -719,8 +793,8 @@ class route_ip(JUNOS):
 						'preference' : int(soup.preference.text) if soup.preference else None,
 						'age' : soup.age.text if soup.age else None,
 						'next-hop' : soup.to.text if soup.to else None,
-						'interface' : soup.via.text if soup.via else None,
-						'zone' : soup2.find('logical-interface-zone-name').text.replace('\n','')
+						'interface' : _iface if soup.via else None,
+						'zone' : zone
 						}}
 class match(JUNOS):
 	def get(self,args):
@@ -730,37 +804,58 @@ class match(JUNOS):
 			return {'error' : 'Could not connect to device.'}, 504
 		else:
 			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
-		#Source Zone
-		if 'from' in args:
-			from_zone = args['from']
-		else:
-			rpc = etree.tostring(self.dev.rpc.get_route_information(destination=args['source']), encoding='unicode')
-			soup = BS(u''.join(rpc).encode('utf-8'),'xml')
-			rpc = etree.tostring(self.dev.rpc.get_interface_information(interface_name=soup.find('via').text), encoding='unicode')
-			soup = BS(u''.join(rpc).encode('utf-8'),'xml')
-			from_zone = soup.find('logical-interface-zone-name').text.replace('\n','')
-		#Destination Zone
-		if 'to' in args:
-			to_zone = args['to']
-		else:
-			rpc = etree.tostring(str(self.dev.rpc.get_route_information(destination=args['destination'])), encoding='unicode')
-			soup = BS(u''.join(rpc).encode('utf-8'),'xml')
-			rpc = etree.tostring(str(self.dev.rpc.get_interface_information(interface_name=soup.find('via').text)), encoding='unicode')
-			soup = BS(u''.join(rpc).encode('utf-8'),'xml')
-			to_zone = soup.find('logical-interface-zone-name').text.replace('\n','')
+		try:
+			#Source Zone
+			if 'from' in args:
+				from_zone = args['from']
+			else:
+				rpc = etree.tostring(self.dev.rpc.get_route_information(destination=args['source']), encoding='unicode')
+				soup = BS(u''.join(rpc).encode('utf-8'),'xml')
+				for iface in soup.find_all('via'):
+					if not iface:
+						continue
+					else:
+						rpc2 = etree.tostring(self.dev.rpc.get_interface_information(interface_name=iface.text), encoding='unicode')
+						soup2 = BS(u''.join(rpc2).encode('utf-8'),'xml')
+						if soup2.find('logical-interface-zone-name'):
+							break
+				if not soup2.find('logical-interface-zone-name'):
+					raise Exception("Interface has no Zone.")
+				from_zone = soup2.find('logical-interface-zone-name').text.replace('\n','')
+			#Destination Zone
+			if 'to' in args:
+				to_zone = args['to']
+			else:
+				rpc = etree.tostring(self.dev.rpc.get_route_information(destination=args['destination']), encoding='unicode')
+				soup = BS(u''.join(rpc).encode('utf-8'),'xml')
+				for iface in soup.find_all('via'):
+					if not iface:
+						continue
+					else:
+						rpc2 = etree.tostring(self.dev.rpc.get_interface_information(interface_name=iface.text), encoding='unicode')
+						soup2 = BS(u''.join(rpc2).encode('utf-8'),'xml')
+						if soup2.find('logical-interface-zone-name'):
+							break
+				if not soup2.find('logical-interface-zone-name'):
+					raise Exception("Interface has no Zone.")
+				to_zone = soup2.find('logical-interface-zone-name').text.replace('\n','')
 
-		if to_zone == from_zone:
-			return {'allowed' : True, 'policy' : 'Intrazone'}
-		rpc = str(self.dev.rpc.match_firewall_policies(
-			from_zone=from_zone,
-			to_zone=to_zone,
-			source_ip=args['source'],
-			destination_ip=args['destination'],
-			source_port=args['source-port'] if 'source-port' in args else "1025",
-			destination_port=args['port'],
-			protocol=args['protocol'] if 'protocol' in args else "tcp"
-			))
-		self.dev.close()
+			if to_zone == from_zone:
+				return {'allowed' : True, 'policy' : 'Intrazone'}
+			rpc = etree.tostring(self.dev.rpc.match_firewall_policies(
+				from_zone=from_zone,
+				to_zone=to_zone,
+				source_ip=args['source'],
+				destination_ip=args['destination'],
+				source_port=args['source-port'] if 'source-port' in args else "1025",
+				destination_port=args['port'],
+				protocol=args['protocol'] if 'protocol' in args else "tcp"
+				), encoding='unicode')
+		except Exception as e:
+			logger.error("Error parsing objects: {0}".format(str(e)))
+			return {'error' : 'Error parsing soup.'}, 500
+		finally:
+			self.dev.close()
 		soup = BS(rpc,'xml')
 		try:
 			aux = {
@@ -819,7 +914,8 @@ class commit(JUNOS):
 			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
 		self.dev.bind(cu=Config)
 		try:	
-			self.dev.cu.lock()
+			#self.dev.cu.lock()
+			pass
 		except LockError:
 			logger.error("Configuration locked.")
 			self.dev.close()
@@ -835,7 +931,8 @@ class commit(JUNOS):
 			logger.error("Unable to commit.")
 			try:
 				logger.info("Unlocking configuration...")
-				self.dev.cu.unlock()
+				#self.dev.cu.unlock()
+				pass
 			except UnlockError:
 				logger.error("Unable to unlock configuration: {0}".format(str(err)))
 				return {'error' : 'Unable to commit and unlock configuration.'}, 504
@@ -846,7 +943,8 @@ class commit(JUNOS):
 			logger.info("Configuration commited successfully.")
 			logger.info("Unlocking configuration...")
 			try:
-				self.dev.cu.unlock()
+				#self.dev.cu.unlock()
+				pass
 			except UnlockError:
 				logger.error("Unable to unlock configuration: {0}".format(str(err)))
 				return {'error' : 'Configuration commited but cannot unlock configuration.'}, 504
@@ -864,7 +962,13 @@ class hitcount(JUNOS):
 			return {'error' : 'Could not connect to device.'}, 504
 		else:
 			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
-		rpc = etree.tostring(str(jns.rpc.get_security_policies_hit_count()), encoding='unicode')
+		try:
+			rpc = etree.tostring(str(jns.rpc.get_security_policies_hit_count()), encoding='unicode')
+		except Exception as e:
+			logger.error("Error parsing rpc: {0}".format(str(e)))
+			return {'error' : 'Error parsing soup.'}, 500
+		finally:
+			self.dev.close()
 		soup = BS(rpc,'xml')
 		entries = list()
 		for hitcount in soup.find('policy-hit-count').children:
