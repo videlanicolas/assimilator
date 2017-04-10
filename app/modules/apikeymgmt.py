@@ -121,7 +121,7 @@ class generate(Resource):
 				aux = list()
 				for k,v in apikeys.iteritems():
 					aux.append(int(k))
-				id = str(aux[-1] + 1)
+				id = str(aux[-1] + 2)
 			else:
 				id = "1"
 			key = {id : {"token" : list(), "comment" : request.json['comment'] if 'comment' in request.json else None ,"key" : ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(100))}}
