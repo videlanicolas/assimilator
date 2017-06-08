@@ -35,6 +35,8 @@ The first restful API to control all firewall brands. Configure any firewall wit
 
 ## How it works
 
+[docs](http://assimilator.readthedocs.io/en/latest/)
+
 All firewalls share a common ground on their configuration, for example:
 
  - List of commands showing the actual configuration (AKA the running configuration).
