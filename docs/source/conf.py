@@ -51,8 +51,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Assimilator'
-copyright = '2017, Nicolás Videla'
-author = 'Nicolás Videla'
+copyright = '2017, Nicolas Videla'
+author = 'Nicolas Videla'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -132,7 +132,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'Assimilator.tex', 'Assimilator Documentation',
-     'Nicolás Videla', 'manual'),
+     'Nicolas Videla', 'manual'),
 ]
 
 
