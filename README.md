@@ -4,8 +4,8 @@ The first restful API to control all firewall brands. Configure any firewall wit
 
 ### <img src="http://www.firewallmonitor.org/images/firewall.png.pagespeed.ce.cEIPwrb8KY.png" width=50 /> Multiplatform
 
-- [ x ] : Palo Alto ( 90% )
-- [ x ] : Juniper ( 40% )
+- [ x ] : Palo Alto ( 100% )
+- [ x ] : Juniper ( 100% )
 - [   ] : Cisco ( 0% )
 - [   ] : Fortinet ( 0% )
 - [   ] : Checkpoint ( 0% )
