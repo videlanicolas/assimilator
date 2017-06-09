@@ -1,0 +1,273 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Install &mdash; Assimilator 1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Assimilator 1.0 documentation" href="../index.html"/>
+        <link rel="next" title="First steps" href="firststeps.html"/>
+        <link rel="prev" title="Introduction" href="intro.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Assimilator
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Install</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-docker-way">The Docker Way</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-repo-cloning-way">The Repo-Cloning Way</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="firststeps.html">First steps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="keymanagement.html">API Key Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firewallmgmt.html">Firewall management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="objects.html">Objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rules.html">Rules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="route.html">Routes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Assimilator</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Install</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/user/install.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="install">
+<span id="id1"></span><h1>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h1>
+<p>Assimilator can be installed through Docker or cloned into a directory and run from there. Personally I prefer Docker since it’s more reliable, but both ways work.</p>
+<div class="section" id="the-docker-way">
+<h2>The Docker Way<a class="headerlink" href="#the-docker-way" title="Permalink to this headline">¶</a></h2>
+<p>The best way to install Assimilator is through <a class="reference external" href="https://docs.docker.com/engine/installation/">Docker</a>:</p>
+<blockquote>
+<div>$ docker pull videlanicolas/assimilator:stable</div></blockquote>
+<p>The latest build is constantly improving, I recomend the stable version or instead the latest tag which are also stable:</p>
+<blockquote>
+<div>$ docker pull videlanicolas/assimilator:1.2.2</div></blockquote>
+<p>Run a container:</p>
+<blockquote>
+<div>$ docker run -d -v /path/to/configuration:/etc/assimilator/ -p 443:443 videlanicolas/assimilator:stable</div></blockquote>
+<p>Docker containers are not peristent, so if you want to maintain your configured Firewalls and API keys you should mount an external directory into the container, that’s what the -v is for.</p>
+</div>
+<div class="section" id="the-repo-cloning-way">
+<h2>The Repo-Cloning Way<a class="headerlink" href="#the-repo-cloning-way" title="Permalink to this headline">¶</a></h2>
+<p>A.K.A I don’t trust your Docker image.</p>
+<p>You can clone the repo from <a class="reference external" href="https://github.com/videlanicolas/assimilator.git">Github</a> and build your image of Assimilator from the <a class="reference external" href="https://github.com/videlanicolas/assimilator/blob/master/Dockerfile">dockerfile</a>.</p>
+<blockquote>
+<div>$ git clone <a class="reference external" href="https://github.com/videlanicolas/assimilator.git">https://github.com/videlanicolas/assimilator.git</a>
+$ docker build -t assimilator .</div></blockquote>
+<p>If you don’t want to use Docker there is a <a class="reference external" href="https://github.com/videlanicolas/assimilator/blob/master/install.sh">bash script</a> to install the dependencies. Also there is <a class="reference external" href="https://github.com/videlanicolas/assimilator/blob/master/generate_certificate.sh">another bash script</a> to generate a random certificate for HTTPS connections.</p>
+<blockquote>
+<div>$ git clone <a class="reference external" href="https://github.com/videlanicolas/assimilator.git">https://github.com/videlanicolas/assimilator.git</a>
+$ chmod +x install.sh generate_certificate.sh
+$ ./generate_certificate.sh
+$ ./install.sh</div></blockquote>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="firststeps.html" class="btn btn-neutral float-right" title="First steps" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="intro.html" class="btn btn-neutral" title="Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Nicolas Videla.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
