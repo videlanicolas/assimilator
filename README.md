@@ -2,7 +2,7 @@
 
 The first restful API to control all firewall brands. Configure any firewall with restful API calls, no more manual rule configuration. Centralize all your firewalls into one API.
 
-### <img src="http://www.firewallmonitor.org/images/firewall.png.pagespeed.ce.cEIPwrb8KY.png" width=50 /> Multiplatform
+### <img src="http://www.psdgraphics.com/wp-content/uploads/2012/05/firewall-security.jpg" width=50 /> Multiplatform
 
 - [ x ] : Palo Alto ( 100% )
 - [ x ] : Juniper ( 100% )
