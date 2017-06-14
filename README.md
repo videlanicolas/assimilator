@@ -106,4 +106,4 @@ sudo ./install.sh
 ```
 
 ## Documentation
-Visit the <a href="https://github.com/videlanicolas/assimilator/wiki">wiki</a>.
+Read the <a href="http://assimilator.readthedocs.io/en/latest/">documentation</a>.
