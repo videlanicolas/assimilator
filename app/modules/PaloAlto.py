@@ -1816,21 +1816,6 @@ class logging(PAN):
 		else:
 			soup = BeautifulSoup(response.text,'xml')
 		logging = list()
-		if not soup.profiles:
-			log_static = {
-			'arias' : 'Log_fwd_meli',
-			'uruguay' : 'Log_fwd_meli',
-			'sanluis' : 'Log_fwd_meli',
-			'mexico' : 'LF_Threats_Traffic',
-			'brasil' : 'Log_fwd_meli',
-			'usa' : 'LF_syslog01-ar',
-			'colombia' : 'LF_Traffic_Threats',
-			'cordoba' : 'LF_Threats_Traffic',
-			'chile' : 'LF_Threats_Only'
-			}
-			if self.firewall in log_static:
-				logging.append(log_static[self.firewall])
-		else:
-			for a in soup.response.result.profiles.find_all('entry'):
-				logging.append(a['name'])
+		for a in soup.response.result.profiles.find_all('entry'):
+			logging.append(a['name'])
 		return {'log-settings' : logging }

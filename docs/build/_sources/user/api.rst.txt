@@ -25,6 +25,7 @@ Gets the full configuration of the Firewall, in it's native format. In many case
 	200 OK
 
 .. block-code: json
+   
    {
    		"config" : " ... "
    }
@@ -38,6 +39,7 @@ Rules
 Get all rules in the selected Firewall. This can be filtered with URL arguments.
 
 *Example (PaloAlto)*
+
 ::
 	
 	GET /api/argentina/rules
@@ -49,6 +51,7 @@ Get all rules in the selected Firewall. This can be filtered with URL arguments.
 	200 OK
 
 .. block-code: json
+
    {
    		"rules" : [
    		{
@@ -103,6 +106,7 @@ Get all rules in the selected Firewall. This can be filtered with URL arguments.
    }
 
 *Example with arguments (PaloAlto)*
+
 ::
 	
 	GET /api/argentina/rules?from=dmz&to=untrust
@@ -114,6 +118,7 @@ Get all rules in the selected Firewall. This can be filtered with URL arguments.
 	200 OK
 
 .. block-code: json
+
    {
    		"rules" : [
    		{
@@ -222,4 +227,22 @@ To add a rule one simply changes the method to POST and sends one of these JSON 
 		"disable-server-response-inspection": false,
 		"action": "allow"
 	}
+
+Objects
+-------
+
+**/api/<firewall>/objects/<address|address-group|service|service-group>**
+
+Firewall objects identify hosts and ports in the rules, basically there are four type of objects:
+
+ * Address: Hosts identified by an IP, IP range, subnet or FQDN.
+ * Service: A combination of protocol and source/destination port.
+ * Address Group: A group of Address objects.
+ * Service Group: A group of service objects.
+
+
+
+
+Routes
+------
 

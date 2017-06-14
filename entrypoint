@@ -1,3 +1,5 @@
 #!/bin/bash
 chown -R www-data:www-data /etc/assimilator/
-/usr/sbin/apache2ctl -D FOREGROUND
+service apache2 start
+service apache2 stop
+apache2ctl -X

@@ -88,7 +88,7 @@ class mgmt(Resource):
 			logger.error("Cannot JSON parse API key file.")
 			return {}, 204
 		try:
-			if id not in apikeys:
+			if str(id) not in apikeys:
 				logger.warning("ID not found.")
 				return {'error' : 'ID not found.'}, 404
 			else:
@@ -120,8 +120,8 @@ class generate(Resource):
 			if apikeys:
 				aux = list()
 				for k,v in apikeys.iteritems():
-					aux.append(int(k))
-				id = str(aux[-1] + 2)
+					aux.append(int(k))				
+				id = str(sorted(aux)[-1] + 1)
 			else:
 				id = "1"
 			key = {id : {"token" : list(), "comment" : request.json['comment'] if 'comment' in request.json else None ,"key" : ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(100))}}

@@ -98,6 +98,8 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#config">Config</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#rules">Rules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#objects">Objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#routes">Routes</a></li>
 </ul>
 </li>
 </ul>
@@ -255,6 +257,22 @@ Content-Type: application/json
 <span class="p">}</span>
 </pre></div>
 </div>
+</div>
+<div class="section" id="objects">
+<h2>Objects<a class="headerlink" href="#objects" title="Permalink to this headline">¶</a></h2>
+<p><strong>/api/&lt;firewall&gt;/objects/&lt;address|address-group|service|service-group&gt;</strong></p>
+<p>Firewall objects identify hosts and ports in the rules, basically there are four type of objects:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Address: Hosts identified by an IP, IP range, subnet or FQDN.</li>
+<li>Service: A combination of protocol and source/destination port.</li>
+<li>Address Group: A group of Address objects.</li>
+<li>Service Group: A group of service objects.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="routes">
+<h2>Routes<a class="headerlink" href="#routes" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
