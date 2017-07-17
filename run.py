@@ -6,6 +6,7 @@ from traceback import format_exc
 import app.modules.handler as handler
 import app.modules.apikeymgmt as keymgmt
 import app.modules.firewalls as firewalls
+import app.modules.status as status
 import ConfigParser, os
 import logging
 import bs4
@@ -61,6 +62,9 @@ api.add_resource(firewalls.firewalls, '/firewalls/<string:site>')
 api.add_resource(firewalls.firewalls_all, '/firewalls')
 
 #API REST Resources
+#STATUS
+api.add_resource(status.status, '/api/status')
+
 #CONFIG
 api.add_resource(handler.config, '/api/<string:firewall>/config')
 
