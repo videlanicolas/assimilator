@@ -1,0 +1,7 @@
+lxml == 3.6.1
+junos-eznc == 2.0.1
+werkzeug == 0.11.10
+flask == 0.11.1
+flask_restful == 0.3.5
+bs4 == 0.0.1
+requests == 2.10.0

@@ -16,7 +16,6 @@ touch /etc/assimilator/firewalls.json
 touch /etc/assimilator/api.key
 touch /var/www/assimilator/__init__.py
 cp -R ${PWD}/app /var/www/assimilator/
-cp -R ${PWD}/flask /var/www/assimilator/
 
 echo "Generating RSA key pair..."
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/apache2/ssl/assimilator.key -out /etc/apache2/ssl/assimilator.crt
