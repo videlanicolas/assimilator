@@ -2,8 +2,12 @@ FROM ubuntu:xenial
 
 #Install dependencies
 RUN apt-get update &&\
-	apt-get install -y apache2 libapache2-mod-wsgi openssl python-lxml && apt-get clean &&\
+	apt-get install -y apache2 libapache2-mod-wsgi openssl python-dev libxml2-dev libxslt1-dev python-pip lib32z1-dev libffi-dev && apt-get clean &&\
 	rm -rf /var/lib/apt/lists/*
+
+#Copy and install dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
 
 #Version information and maintainer
 LABEL version:"1.2.2" maintainer:"Nicolas Videla"
@@ -12,7 +16,7 @@ LABEL version:"1.2.2" maintainer:"Nicolas Videla"
 EXPOSE 443/tcp
 
 #Create directories
-RUN mkdir -p /var/www/assimilator/flask /var/www/assimilator/app /etc/apache2/ssl
+RUN mkdir -p /var/www/assimilator/app /etc/apache2/ssl
 
 #Create log file
 RUN touch /var/log/assimilator.log
@@ -35,7 +39,6 @@ RUN touch /var/www/assimilator/__init__.py
 
 #Install assimilator
 COPY app/ /var/www/assimilator/app/
-COPY flask/ /var/www/assimilator/flask/
 
 #Copy private RSA key
 COPY assimilator.key /etc/apache2/ssl/assimilator.key
