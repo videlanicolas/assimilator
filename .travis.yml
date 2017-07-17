@@ -1,0 +1,24 @@
+sudo: required
+language: python
+python:
+  - '2.7'
+
+services:
+  - docker
+
+install: 
+  - docker build -t assimilator .
+  - docker run -d -p 443:443/tcp assimilator
+
+before_script:
+  - pip install -r requirements.txt
+
+script:
+  - docker ps | grep -q assimilator 
+  - python tests.py
+
+after_success:
+- if [ "$TRAVIS_BRANCH" == "docker" ]; then
+  docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
+  docker push videlanicolas/assimilator;
+  fi
