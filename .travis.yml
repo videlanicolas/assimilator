@@ -15,7 +15,7 @@ before_script:
 
 script:
   - docker ps | grep -q assimilator 
-  - python tests.py
+  - py.test tests
 
 after_success:
 - if [ "$TRAVIS_BRANCH" == "docker" ]; then
