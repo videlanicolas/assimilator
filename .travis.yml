@@ -22,3 +22,12 @@ after_success:
   docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
   docker push videlanicolas/assimilator;
   fi
+
+deploy:
+  provider: releases
+  api_key:
+    secure: "wcCdoppdBR/KdDg+ZxG0NdLvNSqg5SllYrZqrYw5m2D+0RgFvD89SnQZ36W8IP84EryaKNT3K6cjvAHsWRtjL0fB4e9EInNuHdLmHzmJeW1Pn08ievOoh+MlKGIoW/kX1yr5DiY6xVlxRiMIVyjhFHXgxFBHXDD197ak7jKuFvdgtihJv6mgwxtvEiFv2QGX6FUQ5jEzY779MsoW/0YNQZnJ+LzTFhSl4Nw0e+TE9CcrD/R5S0MaiOpBsshWXmbrfULxkFgHfcRHTUZPK7iUP2ncecoTopszHZA5+bBpQpiBZQJjF3UybcqWgR9Nmk7v3jk99YYY8FaMFS8Ph9rE7786q06XfbMczG1zgHD6gWr83pWbpePMqhOHEH48nEuxBTXTJPK6oEN6fPJmNEWaMsNfDFUGtvBHTz/jJ9x1/BMUlV5l/AO6CFeNiz+ZVDB/c3V2nMxCKyW62NCGmSUNdijx9zHAFaH432v+KSobK+Q5tZZr/Xp6hjzCT0o68q/DL8IENsa3kw2wzA9o5LwxBqEhbcnBYd/8edfxevrMYNUOWkBZ8IgIpb+yd+NuY4qOwlRj0IhlcKMHp4GNR4sxbDLQpicqL8I3JzRHBwDUF5ydLlKC5jQsQ+itIY2oehwtyDxPxn+FL4mwzwiPK4qZhKHCOVL84DWqryFeNJELPjQ="
+  skip_cleanup: true
+  on:
+    repo: videlanicolas/assimilator
+    tags: true
