@@ -35,6 +35,14 @@ def require_appkey(view_function):
 			return {'error' : 'No API key present.'}, 401
 	return decorated_function
 
+class listfirewalls(Resource):
+	@require_appkey
+	def get(self):
+		logger.debug('handler.listfirewalls.get()')
+		config = ConfigParser.RawConfigParser()
+		config.read('/etc/assimilator/assimilator.conf')
+		return json.loads(open(config.get('General','firewalls')).read()).keys()
+
 class config(Resource):
 	@require_appkey
 	def get(self,firewall):
