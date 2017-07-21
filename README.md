@@ -6,13 +6,13 @@ The first restful API to control all firewall brands. Configure any firewall wit
 
 ### <img src="http://www.psdgraphics.com/wp-content/uploads/2012/05/firewall-security.jpg" width=50 /> Multiplatform
 
-- [x] : Palo Alto
-- [x] : Juniper
-- [ ] : Cisco
-- [ ] : Fortinet
-- [ ] : Checkpoint
-- [ ] : PfSense
-- [ ] : AWS
+- [x] Palo Alto
+- [x] Juniper
+- [ ] Cisco
+- [ ] Fortinet
+- [ ] Checkpoint
+- [ ] PfSense
+- [ ] AWS
 
 ### <img src="http://www.iconsdb.com/icons/preview/orange/key-xxl.png" width=50 /> Authentication
 
