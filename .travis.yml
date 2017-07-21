@@ -14,7 +14,7 @@ before_script:
   - pip install -r requirements.txt
 
 script:
-  - docker ps | grep -q assimilator 
+  - docker ps | grep assimilator 
   - py.test tests
 
 after_success:
