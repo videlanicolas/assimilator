@@ -1,4 +1,4 @@
-# Assimilator
+# Assimilator<img src="https://github.com/videlanicolas/assimilator/blob/master/media/logo.png" width="100">
 
 [![Build Status](https://travis-ci.org/videlanicolas/assimilator.svg?branch=master)](https://travis-ci.org/videlanicolas/assimilator.svg?branch=master)
 
