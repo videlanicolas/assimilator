@@ -9,8 +9,7 @@ class Firewall():
 	def getConfig(self):
 		config = ConfigParser.RawConfigParser()
 		config.read("/etc/assimilator/assimilator.conf")
-		with open(config.get('General','firewalls')) as f:
-			return json.loads(f.read())[self.firewall]
+		return json.loads(open(config.get('General','firewalls')).read())[self.firewall]
 	def getMaster(self):
 		return self.firewall_config['primary']
 	def filter(self,args,_entries):

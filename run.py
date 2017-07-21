@@ -62,6 +62,9 @@ api.add_resource(firewalls.firewalls, '/firewalls/<string:site>')
 api.add_resource(firewalls.firewalls_all, '/firewalls')
 
 #API REST Resources
+#List Firewalls
+api.add_resource(handler.listfirewalls, '/api/listfirewalls')
+
 #STATUS
 api.add_resource(status.status, '/api/status')
 
