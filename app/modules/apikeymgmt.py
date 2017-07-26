@@ -35,8 +35,7 @@ class mgmt_all(Resource):
 		config = ConfigParser.RawConfigParser()
 		config.read('/etc/assimilator/assimilator.conf')
 		try:
-			with open(config.get('General','apikeyfile')) as f:
-				apikeys = json.loads(f.read())
+			apikeys = json.loads(open(config.get('General','apikeyfile')).read())
 		except ValueError:
 			return {}, 204
 		except Exception as e:
@@ -49,8 +48,7 @@ class mgmt(Resource):
 		config = ConfigParser.RawConfigParser()
 		config.read('/etc/assimilator/assimilator.conf')
 		try:
-			with open(config.get('General','apikeyfile')) as f:
-				apikeys = json.loads(f.read())
+			apikeys = json.loads(open(config.get('General','apikeyfile')).read())
 		except Exception as e:
 			logger.error("Cannot JSON parse API key file.")
 			return {}, 204
@@ -64,8 +62,7 @@ class mgmt(Resource):
 		config = ConfigParser.RawConfigParser()
 		config.read('/etc/assimilator/assimilator.conf')
 		try:
-			with open(config.get('General','apikeyfile')) as f:
-				apikeys = json.loads(f.read())
+			apikeys = json.loads(open(config.get('General','apikeyfile')).read())
 		except Exception as e:
 			logger.error("Cannot JSON parse API key file.")
 			return {}, 204
@@ -82,8 +79,7 @@ class mgmt(Resource):
 		config = ConfigParser.RawConfigParser()
 		config.read('/etc/assimilator/assimilator.conf')
 		try:
-			with open(config.get('General','apikeyfile')) as f:
-				apikeys = json.loads(f.read())
+			apikeys = json.loads(open(config.get('General','apikeyfile')).read())
 		except Exception as e:
 			logger.error("Cannot JSON parse API key file.")
 			return {}, 204
@@ -109,8 +105,7 @@ class generate(Resource):
 		config.read('/etc/assimilator/assimilator.conf')
 		try:
 			apikeys = dict()
-			with open(config.get('General','apikeyfile')) as f:
-				apikeys = json.loads(f.read())
+			apikeys = json.loads(open(config.get('General','apikeyfile')).read())
 		except ValueError:
 			logger.warning("No JSON data on apikeyfile.")
 		except Exception as e:
