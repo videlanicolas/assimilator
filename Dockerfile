@@ -10,7 +10,7 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 
 #Version information and maintainer
-LABEL version:"1.2.2" maintainer:"Nicolas Videla"
+LABEL version:"1.2.3" maintainer:"Nicolas Videla"
 
 #Expose only SSL
 EXPOSE 443/tcp
