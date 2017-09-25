@@ -36,11 +36,12 @@ class mgmt_all(Resource):
 		config.read('/etc/assimilator/assimilator.conf')
 		try:
 			apikeys = json.loads(open(config.get('General','apikeyfile')).read())
-		except ValueError:
+		except (ValueError, IOError):
 			return {}, 204
 		except Exception as e:
 			logger.error("Cannot JSON parse API key file.")
-		return apikeys
+		else:
+			return apikeys
 
 class mgmt(Resource):
 	@requires_auth

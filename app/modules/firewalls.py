@@ -37,13 +37,14 @@ class firewalls_all(Resource):
 		try:
 			with open(config.get('General','firewalls')) as f:
 				firewalls = json.loads(f.read())
-		except ValueError:
+		except (ValueError, IOError):
 			logger.warning("No data returned.")
 			return {}, 204
 		except Exception as e:
 			logger.error("Cannot JSON parse Firewalls file.")
 			return {'error' : 'Cannot JSON parse Firewalls file.'}, 500
-		return firewalls
+		else:
+			return firewalls
 	@requires_auth
 	def post(self):
 		config = ConfigParser.RawConfigParser()
