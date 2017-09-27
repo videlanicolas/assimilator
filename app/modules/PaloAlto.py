@@ -32,9 +32,14 @@ class PAN(Firewall):
 		soup = BeautifulSoup(response.text,'xml')
 		if response.ok:
 			if soup.response['status'] == 'success':
-				return {'ok' : True,\
-						'active' : self.firewall_config['primary'] if soup.response.result.group.find('local-info').state.text == 'active' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0],\
-						'passive' : self.firewall_config['primary'] if soup.response.result.group.find('local-info').state.text == 'passive' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0] }
+				if soup.response.result.enabled == 'no':
+					logger.info("No HA enabled on Firewall, using primary as active IP.")
+					return {'ok' : True,\
+							'active' : self.firewall_config['primary'], 'passive' : self.firewall_config['secondary']}
+				else:
+					return {'ok' : True,\
+							'active' : self.firewall_config['primary'] if soup.response.result.group.find('local-info').state.text == 'active' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0],\
+							'passive' : self.firewall_config['primary'] if soup.response.result.group.find('local-info').state.text == 'passive' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0] }
 			else:
 				return {'ok' : False, 'info' : 'Could not get active firewall\'s ip.', 'panos-response' : soup.response['status']}
 		else:
@@ -46,7 +51,12 @@ class PAN(Firewall):
 								cmd="<show><high-availability><state></state></high-availability></show>")
 			soup = BeautifulSoup(response.text,'xml')
 			if soup.response['status'] == 'success':
-				return {'status' : True,\
+				if soup.response.result.enabled == 'no':
+					logger.info("No HA enabled on Firewall, using primary as active IP.")
+					return {'ok' : True,\
+							'active' : self.firewall_config['primary'], 'passive' : self.firewall_config['secondary']}
+				else:
+					return {'status' : True,\
 							'active' : self.firewall_config['primary'] if soup.response.result.group.find('local-info').state.text == 'active' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0],\
 							'passive' : self.firewall_config['primary'] if soup.response.result.group.find('local-info').state.text == 'passive' else soup.response.result.group.find('peer-info').find('mgmt-ip').text.split('/')[0] }
 			else:
