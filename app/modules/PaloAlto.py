@@ -32,7 +32,7 @@ class PAN(Firewall):
 		soup = BeautifulSoup(response.text,'xml')
 		if response.ok:
 			if soup.response['status'] == 'success':
-				if soup.response.result.enabled == 'no':
+				if soup.response.result.enabled.text == 'no':
 					logger.info("No HA enabled on Firewall, using primary as active IP.")
 					return {'ok' : True,\
 							'active' : self.firewall_config['primary'], 'passive' : self.firewall_config['secondary']}
@@ -51,7 +51,7 @@ class PAN(Firewall):
 								cmd="<show><high-availability><state></state></high-availability></show>")
 			soup = BeautifulSoup(response.text,'xml')
 			if soup.response['status'] == 'success':
-				if soup.response.result.enabled == 'no':
+				if soup.response.result.enabled.text == 'no':
 					logger.info("No HA enabled on Firewall, using primary as active IP.")
 					return {'ok' : True,\
 							'active' : self.firewall_config['primary'], 'passive' : self.firewall_config['secondary']}
