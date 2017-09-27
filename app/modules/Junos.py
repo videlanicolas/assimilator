@@ -37,7 +37,7 @@ class JUNOS(Firewall):
 		self.dev.open(normalize=True)
 		try:
 			self.dev.timeout = int(self.firewall_config['timeout']) if self.firewall_config['timeout'] else 15
-		except ValueError:
+		except (ValueError, KeyError):
 			logger.warning("Firewall timeout is not an int, setting default value.")
 			self.dev.timeout = 15
 		self.primary = self.firewall_config['primary']
