@@ -20,17 +20,20 @@ logging.getLogger("ncclient").setLevel(logging.ERROR)
 class JUNOS(Firewall):
 	def __init__(self,firewall_config):
 		self.firewall_config = firewall_config
-		if self.firewall_config['privatekey'] and self.firewall_config['privatekeypass']:
+		try:
+			assert self.firewall_config['privatekey']
+			assert self.firewall_config['privatekeypass']
+		except:
+			#User password connection
+			logger.info("Juniper User/Password connection.")
+			self.dev = Device(host=self.firewall_config['primary'], password=self.firewall_config['pass'],\
+								user=self.firewall_config['user'], port=self.firewall_config['port'], gather_facts=False)
+		else:
 			#RSA SSH connection
 			logger.info("Juniper RSA SSH connection.")
 			self.dev = Device(host=self.firewall_config['primary'], passwd=self.firewall_config['privatekeypass'],\
 								ssh_private_key_file=self.firewall_config['privatekey'],user=self.firewall_config['user'],\
 								port=self.firewall_config['port'], gather_facts=False)
-		else:
-			#User password connection
-			logger.info("Juniper User/Password connection.")
-			self.dev = Device(host=self.firewall_config['primary'], password=self.firewall_config['pass'],\
-								user=self.firewall_config['user'], port=self.firewall_config['port'], gather_facts=False)
 		self.dev.open(normalize=True)
 		try:
 			self.dev.timeout = int(self.firewall_config['timeout']) if self.firewall_config['timeout'] else 15
