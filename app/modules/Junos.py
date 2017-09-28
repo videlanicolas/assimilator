@@ -737,7 +737,7 @@ class route(JUNOS):
 		else:
 			logger.info("{0}: Connected successfully.".format(self.firewall_config['name']))
 		try:
-			rpc = etree.tostring(str(self.dev.rpc.get_route_information()), encoding='unicode')
+			rpc = etree.tostring(self.dev.rpc.get_route_information(), encoding='unicode')
 			soup = BS(str(rpc).replace('\n            ','').replace('\n',''),'xml')
 		except Exception as e:
 			logger.error("Error parsing rpc: {0}".format(str(e)))
