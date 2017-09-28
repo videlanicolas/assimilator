@@ -346,15 +346,16 @@ class objects(JUNOS):
 											entries.append(app)
 								elif request.args[opcion].lower() in app[opcion].lower():
 									entries.append(app)
-			for application in soup.applications.children:
-				if type(application) != Tag or application.name != 'application':
-					continue
-				aux = {
-				'name' : application.find('name').text,
-				'protocol' : application.protocol.text if application.protocol else '',
-				'port' : application.find('destination-port').text if application.find('destination-port') else ''
-				}
-				entries.append(aux)
+			if not soup.applications.isSelfClosing:
+				for application in soup.applications.children:
+					if type(application) != Tag or application.name != 'application':
+						continue
+					aux = {
+					'name' : application.find('name').text,
+					'protocol' : application.protocol.text if application.protocol else '',
+					'port' : application.find('destination-port').text if application.find('destination-port') else ''
+					}
+					entries.append(aux)
 		elif object == "address-group":
 			filter = E('security',E('zones'))
 			try:
