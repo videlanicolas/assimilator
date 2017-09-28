@@ -745,15 +745,18 @@ class route(JUNOS):
 		finally:
 			self.dev.close()
 		logger.debug(str(soup))
-		return {'route' : {
-					'destination' : soup.find('rt-destination').text,
-					'active' : True if soup.find('current-active') else False,
-					'type' : soup.find('protocol-name').text,
-					'preference' : int(soup.preference.text),
-					'age' : soup.age.text,
-					'next-hop' : soup.to.text,
-					'interface' : soup.via.text
-					}}
+		routes = list()
+		for rt in soup.find_all('rt'):
+			routes.append({
+					'destination' : rt.find('rt-destination').text,
+					'active' : True if rt.find('current-active') else False,
+					'type' : rt.find('protocol-name').text,
+					'preference' : int(rt.preference.text),
+					'age' : rt.age.text,
+					'next-hop' : rt.to.text,
+					'interface' : rt.via.text
+					})
+		return {'route' : routes, 'len' : len(routes)}
 class route_ip(JUNOS):
 	def get(self,ip):
 		try:
