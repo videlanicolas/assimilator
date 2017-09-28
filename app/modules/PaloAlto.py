@@ -847,6 +847,9 @@ class objects(PAN):
 			logger.error("Palo Alto response: " + str(response.status_code))
 			return {'error' : str(response.text)}, 502
 		_entries = list()
+		soup = BeautifulSoup(response.text,'xml')
+		if soup.response.result.isSelfClosing:
+			return {'len' : 0, 'objects' : list()}
 		for entry in BeautifulSoup(response.text,'xml').find(object).children:
 			if type(entry) != Tag:
 				continue
