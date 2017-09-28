@@ -346,7 +346,7 @@ class objects(JUNOS):
 											entries.append(app)
 								elif request.args[opcion].lower() in app[opcion].lower():
 									entries.append(app)
-			if not soup.applications.isSelfClosing:
+			if not soup.isSelfClosing:
 				for application in soup.applications.children:
 					if type(application) != Tag or application.name != 'application':
 						continue
