@@ -393,18 +393,19 @@ class objects(JUNOS):
 			finally:
 				self.dev.close()
 			soup = BS(str(rpc),'xml')
-			for application in soup.applications.children:
-				if type(application) != Tag or application.name != 'application-set':
-					continue
-				aux = {
-				'name' : application.find('name').text,
-				'members' : list()
-				}
-				for member in application.children:
-					if type(member) != Tag or member.name == 'name':
+			if soup.applications:
+				for application in soup.applications.children:
+					if type(application) != Tag or application.name != 'application-set':
 						continue
-					aux['members'].append(member.find('name').text)
-				entries.append(aux)
+					aux = {
+					'name' : application.find('name').text,
+					'members' : list()
+					}
+					for member in application.children:
+						if type(member) != Tag or member.name == 'name':
+							continue
+						aux['members'].append(member.find('name').text)
+					entries.append(aux)
 		else:
 			logger.warning("Resource not found.")
 			return {'error' : 'Resource not found.'}, 404
