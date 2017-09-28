@@ -752,9 +752,9 @@ class route(JUNOS):
 					'active' : True if rt.find('current-active') else False,
 					'type' : rt.find('protocol-name').text,
 					'preference' : int(rt.preference.text),
-					'age' : rt.age.text,
-					'next-hop' : rt.to.text,
-					'interface' : rt.via.text
+					'age' : rt.age.text if rt.age else None,
+					'next-hop' : rt.to.text if rt.to else None,
+					'interface' : rt.via.text if rt.via else None
 					})
 		return {'route' : routes, 'len' : len(routes)}
 class route_ip(JUNOS):
